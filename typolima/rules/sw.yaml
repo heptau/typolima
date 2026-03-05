@@ -1,0 +1,19 @@
+language: Kiswahili
+locale: sw
+
+quotes:
+  primary: ["“", "”"]
+  secondary: ["‘", "’"]
+
+non_breaking_prepositions: [na, ya, wa, kwa]
+
+numbers:
+  thousands_sep: "\u00A0"
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

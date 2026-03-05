@@ -1,0 +1,19 @@
+language: Hrvatski
+locale: hr
+
+quotes:
+  primary: ["„", "“"]
+  secondary: ["»", "«"]
+
+non_breaking_prepositions: [u, s, k, o, a, i, U, S, K, O, A, I]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

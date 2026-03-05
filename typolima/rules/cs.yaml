@@ -1,0 +1,19 @@
+language: Čeština
+locale: cs
+
+quotes:
+  primary: ["„", "“"]
+  secondary: ["‚", "‘"]
+
+non_breaking_prepositions: [v, s, z, k, o, u, a, i, V, S, Z, K, O, U, A, I]
+
+numbers:
+  thousands_sep: "\u00A0"
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []          # v češtině obvykle ne
+  space_after:  []
+
+custom_regex: []            # sem můžeš přidat vlastní

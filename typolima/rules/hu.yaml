@@ -1,0 +1,19 @@
+language: Magyar
+locale: hu
+
+quotes:
+  primary: ["„", "”"]
+  secondary: ["»", "«"]
+
+non_breaking_prepositions: [a, az, e, s]
+
+numbers:
+  thousands_sep: "\u00A0"
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

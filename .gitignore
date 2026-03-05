@@ -1,0 +1,24 @@
+# TypoLima GitIgnore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# Build artifacts
+dist/
+release/
+build/
+*.spec
+
+# OS specifics
+.DS_Store
+Thumbs.db
+
+# Temps
+*.tmp
+*.log

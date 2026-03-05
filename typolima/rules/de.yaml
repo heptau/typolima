@@ -1,0 +1,19 @@
+language: Deutsch
+locale: de
+
+quotes:
+  primary: ["„", "“"]
+  secondary: ["‚", "‘"]
+
+non_breaking_prepositions: [a, d, s, v, b, f, n, u, i, m, z] # Very basic set, German doesn't have many single-letter prepositions like cs
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

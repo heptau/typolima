@@ -1,0 +1,19 @@
+language: Nederlands
+locale: nl
+
+quotes:
+  primary: ["‘", "’"]
+  secondary: ["“", "”"]
+
+non_breaking_prepositions: [a, u, i]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

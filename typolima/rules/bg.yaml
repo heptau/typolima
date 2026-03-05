@@ -1,0 +1,19 @@
+language: Български
+locale: bg
+
+quotes:
+  primary: ["„", "“"]
+  secondary: ["«", "»"]
+
+non_breaking_prepositions: [в, с, а, и, о, у]
+
+numbers:
+  thousands_sep: "\u00A0"
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

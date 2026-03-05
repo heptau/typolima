@@ -1,0 +1,19 @@
+language: Polski
+locale: pl
+
+quotes:
+  primary: ["„", "”"]
+  secondary: ["«", "»"]
+
+non_breaking_prepositions: [a, i, o, u, w, z, A, I, O, U, W, Z]
+
+numbers:
+  thousands_sep: "\u00A0"
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

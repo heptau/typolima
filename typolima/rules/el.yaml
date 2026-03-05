@@ -1,0 +1,21 @@
+language: Ελληνικά
+locale: el
+
+quotes:
+  primary: ["«", "»"]
+  secondary: ["“", "”"]
+
+# Greek question mark is ; and upper-point separator is ·
+# These are handled by custom_regex to be safe
+non_breaking_prepositions: [ο, η, το, σ, ή]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

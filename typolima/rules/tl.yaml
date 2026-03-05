@@ -1,0 +1,19 @@
+language: Wikang Filipino
+locale: tl
+
+quotes:
+  primary: ["“", "”"]
+  secondary: ["‘", "’"]
+
+non_breaking_prepositions: [ng, sa, at, ay]
+
+numbers:
+  thousands_sep: ","
+  decimal_sep: "."
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

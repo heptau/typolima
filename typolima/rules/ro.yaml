@@ -1,0 +1,19 @@
+language: Română
+locale: ro
+
+quotes:
+  primary: ["„", "”"]
+  secondary: ["«", "»"]
+
+non_breaking_prepositions: [a, o, e, i, u]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

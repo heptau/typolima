@@ -1,0 +1,19 @@
+language: Bahasa Indonesia
+locale: id
+
+quotes:
+  primary: ["“", "”"]
+  secondary: ["‘", "’"]
+
+non_breaking_prepositions: [di, ke, dan, yang]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

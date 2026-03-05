@@ -1,0 +1,19 @@
+language: Tiếng Việt
+locale: vi
+
+quotes:
+  primary: ["“", "”"]
+  secondary: ["‘", "’"]
+
+non_breaking_prepositions: [ở, y, à, và]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

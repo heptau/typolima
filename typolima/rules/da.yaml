@@ -1,0 +1,19 @@
+language: Dansk
+locale: da
+
+quotes:
+  primary: ["»", "«"]
+  secondary: ["‘", "’"]
+
+non_breaking_prepositions: [i, á, å, og, en, et]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

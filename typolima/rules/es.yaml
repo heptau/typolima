@@ -1,0 +1,19 @@
+language: Español
+locale: es
+
+quotes:
+  primary: ["«", "»"]
+  secondary: ["“", "”"]
+
+non_breaking_prepositions: [a, e, o, u, y, A, E, O, U, Y]
+
+numbers:
+  thousands_sep: "."
+  decimal_sep: ","
+  unit_nnbsp: true
+
+punctuation:
+  space_before: []
+  space_after:  []
+
+custom_regex: []

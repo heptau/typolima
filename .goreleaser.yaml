@@ -1,0 +1,36 @@
+# TypoLima GoReleaser Configuration
+version: 2
+project_name: typolima
+
+before:
+  hooks:
+    # Build only for the host architecture during snapshot/release
+    - make build-bin VERSION={{.Version}}
+
+builds:
+  - id: typolima-binary
+    main: ./main.go # Dummy file
+    binary: typolima-dummy
+    goos:
+      - darwin
+    goarch:
+      - arm64
+      - amd64
+
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - release/typolima-*
+
+brews:
+  - name: typolima
+    repository:
+      owner: heptau
+      name: homebrew-tap
+    homepage: "https://github.com/heptau/typolima"
+    description: "Conservative typographic fixer for HTML, PHP and text"
+    install: |
+      # We ignore the go-dummy and install the real python one
+      bin.install "release/typolima-#{version}-macos" => "typolima"
