@@ -1,9 +1,20 @@
-language: Wikang Filipino
+language: Tagalog
 locale: tl
 
 quotes:
   primary: ["“", "”"]
   secondary: ["‘", "’"]
+
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
 
 non_breaking_prepositions: [ng, sa, at, ay]
 

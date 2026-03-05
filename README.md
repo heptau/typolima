@@ -11,9 +11,13 @@ It only touches **text content** (never tags, attributes, scripts, style blocks,
 - Smart curly quotes („ “ for cs, « » for fr, etc.)
 - Non-breaking spaces after single-letter prepositions (cs, de, fr …)
 - NBSP before units (5&nbsp;kg, 20&nbsp;%)
+- Intelligent dashes (en-dash `–` for ranges `10–20`, or parenthetical thoughts with NBSP)
+- Common abbreviations (cs: `s. r. o.`, `tj.`, `tzn.`)
+- Automatic units & symbols: `m2` → `m²`, `cm3` → `cm³`
+- Smart prices: `100,-` → `100,–`
 - Correct thousands / decimal separators per language
 - Spaces around punctuation (especially French style: ? ! : ;)
-- En/em-dashes, ellipsis …
+- Aggressive mode: `(c)` → `©`, `+-` → `±`, `->` → `→` etc.
 - Very conservative – skips uncertain cases
 - Works on HTML, PHP, Hugo templates, Markdown …
 

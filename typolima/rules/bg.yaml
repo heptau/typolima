@@ -3,9 +3,21 @@ locale: bg
 
 quotes:
   primary: ["„", "“"]
-  secondary: ["«", "»"]
+  secondary: ["‘", "’"]
 
-non_breaking_prepositions: [в, с, а, и, о, у]
+apostrophe: "’"
+
+dashes:
+  # Bulgarian uses em-dash with spaces for thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [в, с, к, у, о, и, а]
 
 numbers:
   thousands_sep: "\u00A0"

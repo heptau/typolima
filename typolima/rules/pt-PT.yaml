@@ -1,26 +1,25 @@
-language: Kiswahili
-locale: sw
+language: Português (Portugal)
+locale: pt-PT
 
 quotes:
-  primary: ["“", "”"]
-  secondary: ["‘", "’"]
+  primary: ["«", "»"]
+  secondary: ["“", "”"]
 
 apostrophe: "’"
 
 dashes:
   - pattern: " --? "
     replacement: "[NBSP]– "
-  # Ranges
   - pattern: "(?<=\\d)-(?=\\d)"
     replacement: "–"
   - pattern: "\\.{3,}"
     replacement: "…"
 
-non_breaking_prepositions: [na, ya, wa, kwa]
+non_breaking_prepositions: [a, e, o, u, i, A, E, O, U, I]
 
 numbers:
-  thousands_sep: ","
-  decimal_sep: "."
+  thousands_sep: "."
+  decimal_sep: ","
   unit_nnbsp: true
 
 punctuation:

@@ -5,7 +5,19 @@ quotes:
   primary: ["«", "»"]
   secondary: ["‹", "›"]
 
-non_breaking_prepositions: [à, de, du, le, la, les, des, un, une, et, ou]
+apostrophe: "’"
+
+dashes:
+  # Em-dash for parenthetical thoughts or dialogues
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges (en-dash)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [à, y, de, du, le, la, les, des, un, une, et, ou]
 
 numbers:
   thousands_sep: "\u00A0"
@@ -15,3 +27,5 @@ numbers:
 punctuation:
   space_before: ["?", "!", ":", ";", "%"]
   space_after:  ["«"]
+
+custom_regex: []

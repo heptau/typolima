@@ -32,6 +32,7 @@ We use a `Makefile` to simplify development tasks.
 
 - Follow PEP 8 for Python code.
 - Use 4 spaces for indentation in Python files.
+- **Always use English for comments** in code and YAML rule files.
 - Keep the logic conservative – it is better to skip an uncertain case than to break a file.
 
 ## Submitting Changes

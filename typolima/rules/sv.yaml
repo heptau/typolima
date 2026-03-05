@@ -5,6 +5,17 @@ quotes:
   primary: ["”", "”"]
   secondary: ["’", "’"]
 
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [i, á, å]
 
 numbers:

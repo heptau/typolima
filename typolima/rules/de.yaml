@@ -5,7 +5,19 @@ quotes:
   primary: ["„", "“"]
   secondary: ["‚", "‘"]
 
-non_breaking_prepositions: [a, d, s, v, b, f, n, u, i, m, z] # Very basic set, German doesn't have many single-letter prepositions like cs
+apostrophe: "’"
+
+dashes:
+  # En-dash with non-breaking space before (parenthetical thoughts)
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # En-dash for ranges (between digits, no spaces)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [a, d, s, v, b, f, n, u, i, m, z]
 
 numbers:
   thousands_sep: "."

@@ -22,7 +22,7 @@
   - `__main__.py`: CLI entry point.
 - `tests/`: Unittest-based test suite.
 - `AICONTEXT.md`: This context file.
-- `CONTRIBUTING.md`: Guidelines for contributors.
+- `CONTRIBUTING.md`: Guidelines for contributors (code style, English comments, rules).
 - `Makefile`: Build and release automation.
 - `VERSION`: Single source of truth for versioning.
 - `.goreleaser.yaml`: Release configuration.
@@ -41,3 +41,7 @@
 - [x] Automate builds and releases (Makefile + GoReleaser).
 - [ ] Support for LaTeX or Markdown-specific enhanced typography.
 - [ ] Better CLI progress indicators for large projects.
+
+## Rules for AI Agents
+- **Strictly follow `CONTRIBUTING.md`** for code style, documentation, and mandatory English comments.
+- Always run `make test` before pushing any changes to the rules or core logic.

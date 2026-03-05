@@ -5,6 +5,18 @@ quotes:
   primary: ["“", "”"]
   secondary: ["‘", "’"]
 
+apostrophe: "’"
+
+dashes:
+  # Turkish often uses em-dash for thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [ve, de, da, ki]
 
 numbers:

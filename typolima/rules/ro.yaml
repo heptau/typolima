@@ -5,6 +5,18 @@ quotes:
   primary: ["„", "”"]
   secondary: ["«", "»"]
 
+apostrophe: "’"
+
+dashes:
+  # Romanian often uses em-dash with spaces for thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [a, o, e, i, u]
 
 numbers:

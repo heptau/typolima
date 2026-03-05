@@ -5,6 +5,18 @@ quotes:
   primary: ["«", "»"]
   secondary: ["“", "”"]
 
+apostrophe: "’"
+
+dashes:
+  # Em-dash for parenthetical thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges (en-dash)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [a, e, o, u, y, A, E, O, U, Y]
 
 numbers:

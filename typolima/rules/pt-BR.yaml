@@ -1,5 +1,5 @@
-language: Kiswahili
-locale: sw
+language: Português (Brasil)
+locale: pt-BR
 
 quotes:
   primary: ["“", "”"]
@@ -8,19 +8,20 @@ quotes:
 apostrophe: "’"
 
 dashes:
+  # Brazil often prefers em-dash or en-dash with spaces similar to European but with double quotes
   - pattern: " --? "
-    replacement: "[NBSP]– "
+    replacement: "[NBSP]— "
   # Ranges
   - pattern: "(?<=\\d)-(?=\\d)"
     replacement: "–"
   - pattern: "\\.{3,}"
     replacement: "…"
 
-non_breaking_prepositions: [na, ya, wa, kwa]
+non_breaking_prepositions: [a, e, o, u, i, A, E, O, U, I, em, de, da, do, na, no]
 
 numbers:
-  thousands_sep: ","
-  decimal_sep: "."
+  thousands_sep: "."
+  decimal_sep: ","
   unit_nnbsp: true
 
 punctuation:

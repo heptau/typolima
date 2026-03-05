@@ -5,7 +5,18 @@ quotes:
   primary: ["«", "»"]
   secondary: ["‘", "’"]
 
-non_breaking_prepositions: [i, á, å, og, en, et]
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [i, á, å]
 
 numbers:
   thousands_sep: "\u00A0"

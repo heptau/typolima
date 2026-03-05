@@ -5,7 +5,18 @@ quotes:
   primary: ["“", "”"]
   secondary: ["‘", "’"]
 
-non_breaking_prepositions: [ở, y, à, và]
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [ở, và, là, của, được, trong, cho, đến]
 
 numbers:
   thousands_sep: "."

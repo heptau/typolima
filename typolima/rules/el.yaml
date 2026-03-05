@@ -5,8 +5,17 @@ quotes:
   primary: ["«", "»"]
   secondary: ["“", "”"]
 
-# Greek question mark is ; and upper-point separator is ·
-# These are handled by custom_regex to be safe
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [ο, η, το, σ, ή]
 
 numbers:
@@ -18,4 +27,9 @@ punctuation:
   space_before: []
   space_after:  []
 
-custom_regex: []
+# Greek question mark is ; and upper-point separator is ·
+custom_regex:
+  - pattern: " ;"
+    replacement: ";"
+  - pattern: " ([·])"
+    replacement: "[NBSP]·"

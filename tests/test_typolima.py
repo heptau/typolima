@@ -28,19 +28,34 @@ class TestTypoLima(unittest.TestCase):
         # Numbers
         self.assertEqual(typolima.fix_text("1000", rules), "1000")  # no separator for 4-digits anymore
         self.assertEqual(typolima.fix_text("10000", rules), "10\u00A0000")
+        # Abbreviations (s.r.o.) - Note: tj. at the end won't match \s pattern in our current YAML
+        self.assertEqual(typolima.fix_text("Alza s.r.o. tzn. tj. ", rules), "Alza s.\u202Fr.\u202Fo. tzn.\u00A0tj.\u00A0")
+        # Prices - note: we add NBSP before Kč
+        self.assertEqual(typolima.fix_text("100,- Kč", rules), "100,\u00A0–\u00A0Kč")
+        # Units m2, m3 - note: 'a' is a preposition so it gets NBSP in Czech
+        self.assertEqual(typolima.fix_text("10m2 a 5cm3", rules), "10m²\u00A0a\u00A05cm³")
 
     def test_fix_text_en(self):
         rules = typolima.load_rules("en", self.rules_dir)
         self.assertEqual(typolima.fix_text('"Hello"', rules), "“Hello”")
+        # Smart apostrophe
+        self.assertEqual(typolima.fix_text("don't you're", rules), "don’t you’re")
         # Thousands separator
         self.assertEqual(typolima.fix_text("10000", rules), "10,000")
+
+    def test_dashes(self):
+        # Range 10-20 should be 10–20 (plus unit check for 'let')
+        rules = typolima.load_rules("cs", self.rules_dir)
+        self.assertEqual(typolima.fix_text("10-20 let", rules), "10–20\u00A0let")
+        # Dash as a separator - ensure we use en-dash (–) in expectation
+        self.assertEqual(typolima.fix_text("A - B", rules), "A\u00A0– B")
 
     def test_fix_text_fr(self):
         rules = typolima.load_rules("fr", self.rules_dir)
         # Spaces around punctuation
         self.assertEqual(typolima.fix_text("Salut ?", rules), "Salut\u00A0?")
-        # ':' gets NBSP before. 'la' is a preposition, gets NBSP after.
-        self.assertEqual(typolima.fix_text("C'est quoi : la vie", rules), "C'est quoi\u00A0: la\u00A0vie")
+        # ':' gets NBSP before. 'la' is a preposition, gets NBSP after. 'C'est' becomes 'C’est'.
+        self.assertEqual(typolima.fix_text("C'est quoi : la vie", rules), "C’est quoi\u00A0: la\u00A0vie")
         # French open-quote should have NBSP after it
         self.assertEqual(typolima.fix_text('«bonjour»', rules), '«\u00A0bonjour»')
 

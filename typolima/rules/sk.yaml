@@ -5,6 +5,18 @@ quotes:
   primary: ["„", "“"]
   secondary: ["‚", "‘"]
 
+apostrophe: "’"
+
+dashes:
+  # En-dash with non-breaking space before (parenthetical thoughts)
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # En-dash for ranges (between digits, no spaces)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [v, s, z, k, o, u, a, i, V, S, Z, K, O, U, A, I]
 
 numbers:
@@ -16,4 +28,9 @@ punctuation:
   space_before: []
   space_after:  []
 
-custom_regex: []
+custom_regex:
+  # s. r. o. -> s.[NNBSP]r.[NNBSP]o.
+  - pattern: "s\\.\\s?r\\.\\s?o\\."
+    replacement: "s.[NNBSP]r.[NNBSP]o."
+  - pattern: "a\\.\\s?s\\."
+    replacement: "a.[NNBSP]s."

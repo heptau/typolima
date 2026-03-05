@@ -5,6 +5,18 @@ quotes:
   primary: ["«", "»"]
   secondary: ["„", "“"]
 
+apostrophe: "’"
+
+dashes:
+  # Russian uses em-dash with spaces for thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges (em-dash or en-dash, often em-dash)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "—"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [в, с, к, у, о, и, а, В, С, К, У, О, И, А]
 
 numbers:

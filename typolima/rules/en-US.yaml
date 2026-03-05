@@ -1,5 +1,5 @@
-language: Kiswahili
-locale: sw
+language: English (US)
+locale: en-US
 
 quotes:
   primary: ["“", "”"]
@@ -8,15 +8,18 @@ quotes:
 apostrophe: "’"
 
 dashes:
-  - pattern: " --? "
-    replacement: "[NBSP]– "
-  # Ranges
+  # US em-dash style: no spaces around
+  - pattern: " ---? "
+    replacement: "[NBSP]— "
+  - pattern: " -- "
+    replacement: "—"
+  # Ranges (en-dash)
   - pattern: "(?<=\\d)-(?=\\d)"
     replacement: "–"
   - pattern: "\\.{3,}"
     replacement: "…"
 
-non_breaking_prepositions: [na, ya, wa, kwa]
+non_breaking_prepositions: [a, an, the, in, on, at, by, of, for, with]
 
 numbers:
   thousands_sep: ","

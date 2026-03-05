@@ -1,15 +1,19 @@
-language: English
-locale: en
+language: English (UK)
+locale: en-GB
 
 quotes:
-  primary: ["“", "”"]
-  secondary: ["‘", "’"]
+  # British often prefer single quotes as primary
+  primary: ["‘", "’"]
+  secondary: ["“", "”"]
 
+# But smart apostrophe is still the same character
 apostrophe: "’"
 
 dashes:
+  # British often prefer en-dash with spaces (similar to Czech)
   - pattern: " --? "
     replacement: "[NBSP]– "
+  # Ranges (en-dash, no spaces)
   - pattern: "(?<=\\d)-(?=\\d)"
     replacement: "–"
   - pattern: "\\.{3,}"
@@ -24,6 +28,6 @@ numbers:
 
 punctuation:
   space_before: []
-  space_after: []
+  space_after:  []
 
 custom_regex: []

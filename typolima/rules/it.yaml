@@ -5,7 +5,17 @@ quotes:
   primary: ["«", "»"]
   secondary: ["“", "”"]
 
-non_breaking_prepositions: [a, e, i, o, u, di, da, in, su, con, per, tra, fra, A, E, I, O, U, Di, Da, In, Su, Con, Per, Tra, Fra]
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [a, e, i, o, u, di, da, in, su, con, per, tra, fra, A, E, I, O, U]
 
 numbers:
   thousands_sep: "."

@@ -5,6 +5,18 @@ quotes:
   primary: ["«", "»"]
   secondary: ["„", "“"]
 
+apostrophe: "’"
+
+dashes:
+  # Ukrainian uses em-dash with spaces for thoughts
+  - pattern: " --? "
+    replacement: "[NBSP]— "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "—"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [в, у, з, і, й, а, В, У, З, І, Й, А]
 
 numbers:

@@ -2,10 +2,21 @@ language: Hrvatski
 locale: hr
 
 quotes:
-  primary: ["„", "“"]
-  secondary: ["»", "«"]
+  primary: ["„", "”"]
+  secondary: ["‘", "’"]
 
-non_breaking_prepositions: [u, s, k, o, a, i, U, S, K, O, A, I]
+apostrophe: "’"
+
+dashes:
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [u, i, a, s, k]
 
 numbers:
   thousands_sep: "."

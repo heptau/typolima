@@ -2,8 +2,22 @@ language: Suomi
 locale: fi
 
 quotes:
+  # Finnish uses right-pointing quotes for both open and close
   primary: ["”", "”"]
   secondary: ["’", "’"]
+
+apostrophe: "’"
+
+dashes:
+  # Finnish prefers en-dash with spaces or no spaces for thoughts,
+  # but with spaces is safer for conservative fixing.
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # Ranges
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
 
 non_breaking_prepositions: [ja, i]
 

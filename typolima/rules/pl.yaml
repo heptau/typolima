@@ -5,7 +5,19 @@ quotes:
   primary: ["„", "”"]
   secondary: ["«", "»"]
 
-non_breaking_prepositions: [a, i, o, u, w, z, A, I, O, U, W, Z]
+apostrophe: "’"
+
+dashes:
+  # En-dash with non-breaking space before (parenthetical thoughts)
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # En-dash for ranges (between digits, no spaces)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
+non_breaking_prepositions: [w, z, o, u, a, i, W, Z, O, U, A, I]
 
 numbers:
   thousands_sep: "\u00A0"

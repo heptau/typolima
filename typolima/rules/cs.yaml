@@ -5,6 +5,18 @@ quotes:
   primary: ["„", "“"]
   secondary: ["‚", "‘"]
 
+apostrophe: "’"
+
+dashes:
+  # En-dash with non-breaking space before (parenthetical thoughts)
+  - pattern: " --? "
+    replacement: "[NBSP]– "
+  # En-dash for ranges (between digits, no spaces)
+  - pattern: "(?<=\\d)-(?=\\d)"
+    replacement: "–"
+  - pattern: "\\.{3,}"
+    replacement: "…"
+
 non_breaking_prepositions: [v, s, z, k, o, u, a, i, V, S, Z, K, O, U, A, I]
 
 numbers:
@@ -13,7 +25,21 @@ numbers:
   unit_nnbsp: true
 
 punctuation:
-  space_before: []          # v češtině obvykle ne
+  space_before: []
   space_after:  []
 
-custom_regex: []            # sem můžeš přidat vlastní
+# Custom rules for specific Czech abbreviations
+custom_regex:
+  # s. r. o. -> s.[NNBSP]r.[NNBSP]o.
+  - pattern: "s\\.\\s?r\\.\\s?o\\."
+    replacement: "s.[NNBSP]r.[NNBSP]o."
+  - pattern: "a\\.\\s?s\\."
+    replacement: "a.[NNBSP]s."
+  - pattern: "\\btzn\\.\\s"
+    replacement: "tzn.[NBSP]"
+  - pattern: "\\btj\\.\\s"
+    replacement: "tj.[NBSP]"
+  - pattern: "\\bč\\.\\s?j\\."
+    replacement: "č.[NNBSP]j."
+  - pattern: "\\btel\\.\\s"
+    replacement: "tel.[NBSP]"
