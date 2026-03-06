@@ -16,21 +16,27 @@ help:
 	@echo "  clean          Remove build artifacts"
 	@echo "  help           Show this help message"
 
+VENV = venv
+PYTHON = $(VENV)/bin/python3
+PIP = $(VENV)/bin/pip
+PYINSTALLER = $(VENV)/bin/pyinstaller
+
 .PHONY: test
 test:
-	@source venv/bin/activate && python3 tests/test_typolima.py
+	@$(PYTHON) tests/test_typolima.py
 
 .PHONY: build-pip
 build-pip: clean
 	@echo "Building pip package..."
 	@mkdir -p $(DIST_DIR)
-	@source venv/bin/activate && python3 -m build --outdir $(DIST_DIR)
+	@$(PYTHON) -m build --outdir $(DIST_DIR)
 
 .PHONY: build-bin
 build-bin:
 	@echo "Building standalone binary (v$(VERSION))..."
 	@mkdir -p $(RELEASE_DIR)
-	@source venv/bin/activate && pip install pyinstaller && pyinstaller --onefile --name typolima --add-data "typolima/rules/*.yaml:typolima/rules" --add-data "VERSION:." typolima/__main__.py
+	@$(PYTHON) -m pip install pyinstaller
+	@$(PYINSTALLER) --onefile --name typolima --add-data "typolima/rules/*.yaml:typolima/rules" --add-data "VERSION:." typolima/__main__.py
 	@mv dist/typolima $(RELEASE_DIR)/typolima-$(VERSION)-macos
 	@echo "Binary created in $(RELEASE_DIR)/"
 
