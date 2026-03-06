@@ -18,8 +18,6 @@ help:
 
 VENV = venv
 PYTHON = $(VENV)/bin/python3
-PIP = $(VENV)/bin/pip
-PYINSTALLER = $(VENV)/bin/pyinstaller
 
 .PHONY: test
 test:
@@ -36,7 +34,7 @@ build-bin:
 	@echo "Building standalone binary (v$(VERSION))..."
 	@mkdir -p $(RELEASE_DIR)
 	@$(PYTHON) -m pip install pyinstaller
-	@$(PYINSTALLER) --onefile --name typolima --add-data "typolima/rules/*.yaml:typolima/rules" --add-data "VERSION:." typolima/__main__.py
+	@$(PYTHON) -m PyInstaller --onefile --name typolima --add-data "typolima/rules/*.yaml:typolima/rules" --add-data "VERSION:." typolima/__main__.py
 	@mv dist/typolima $(RELEASE_DIR)/typolima-$(VERSION)-macos
 	@echo "Binary created in $(RELEASE_DIR)/"
 

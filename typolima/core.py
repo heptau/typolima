@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-typofix – conservative typographic fixer for HTML/text
+typolima – conservative typographic fixer for HTML/text
 """
 
 import argparse
