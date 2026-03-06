@@ -29,6 +29,7 @@ brews:
     repository:
       owner: heptau
       name: homebrew-tap
+    directory: Formula
     homepage: "https://github.com/heptau/typolima"
     description: "Conservative typographic fixer for HTML, PHP and text"
     install: |
