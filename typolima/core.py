@@ -174,9 +174,12 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
     if not before:
         text = re.sub(r" +([!?;])", r"\1", text)
 
-    # Ensure space after comma and period (but NOT for decimals 1,2 or 1.2)
-    # This regex ensures we only add a space if the character after is a letter
-    text = re.sub(r"([,.;])([A-Za-z])", r"\1 \2", text)
+    # Ensure space after comma and semicolon (always safe)
+    text = re.sub(r"([,;])([A-Za-z])", r"\1 \2", text)
+
+    # Ensure space after period only if followed by an uppercase letter
+    # to avoid splitting URLs, hostnames, or lowercase abbreviations.
+    text = re.sub(r"\.([A-Z])", r". \1", text)
 
     # Multiple spaces to single space
     text = re.sub(r" {2,}", " ", text)
@@ -331,4 +334,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
