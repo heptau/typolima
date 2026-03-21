@@ -34,6 +34,9 @@ class TestTypoLima(unittest.TestCase):
         self.assertEqual(typolima.fix_text("100,- Kč", rules), "100,\u00A0–\u00A0Kč")
         # Units m2, m3 - note: 'a' is a preposition so it gets NBSP in Czech
         self.assertEqual(typolima.fix_text("10m2 a 5cm3", rules), "10m²\u00A0a\u00A05cm³")
+        # Non-word symbols like %
+        self.assertEqual(typolima.fix_text("než 90 % standard", rules), "než 90\u00A0% standard")
+        self.assertEqual(typolima.fix_text("100,- %", rules), "100,\u00A0–\u00A0%")
 
     def test_fix_text_en(self):
         rules = typolima.load_rules("en", self.rules_dir)

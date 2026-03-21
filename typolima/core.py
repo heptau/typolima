@@ -95,7 +95,7 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
     if unit_nnbsp:
         # Matches numbers followed by optional space and common units or currency symbols
         units = r"(?:%|[a-zA-Z°]{1,4}|[€$£¥₽₪₺₹]|K[čc])"
-        text = re.sub(rf"(\d)\s*({units})\b", rf"\1{UNICODE_NBSP}\2", text)
+        text = re.sub(rf"(\d)\s*({units})(?!\w)", rf"\1{UNICODE_NBSP}\2", text)
         # Handle prefix currencies like $ or £ (mostly English/US)
         text = re.sub(rf"([$£¥])\s*(\d)", rf"\1{UNICODE_NBSP}\2", text)
 
@@ -103,7 +103,7 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
     text = re.sub(r"(\d),-", rf"\1,{UNICODE_NBSP}–", text)
     # Currency after price dash: , [NBSP] – Kč -> , [NBSP] – [NBSP] Kč
     # We use [\s\u00A0] to match both regular and non-breaking spaces
-    text = re.sub(rf",([\s{UNICODE_NBSP}]*)(–|—)[\s{UNICODE_NBSP}]*({units})\b", rf",\1\2{UNICODE_NBSP}\3", text)
+    text = re.sub(rf",([\s{UNICODE_NBSP}]*)(–|—)[\s{UNICODE_NBSP}]*({units})(?!\w)", rf",\1\2{UNICODE_NBSP}\3", text)
 
     # ──────────────────────────────────────
     # 4. Spaces around punctuation (esp. French)
