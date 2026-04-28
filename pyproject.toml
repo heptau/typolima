@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "beautifulsoup4",
+    "lxml",
     "pyyaml",
 ]
 

@@ -15,27 +15,37 @@ try:
     import yaml
 except ImportError:
     print("Error: missing dependencies", file=sys.stderr)
-    print("Run: pip install beautifulsoup4 pyyaml", file=sys.stderr)
+    print("Run: pip install beautifulsoup4 lxml pyyaml", file=sys.stderr)
     sys.exit(1)
+
+from functools import lru_cache
 
 
 UNICODE_NBSP = "\u00A0"
 UNICODE_NNBSP = "\u202F"  # narrow NBSP – optional
 
 
-def load_rules(lang: str, rules_dir: Path = None) -> Dict[str, Any]:
-    """
-    Load typographic rules from a YAML file.
-    """
-    if rules_dir is None:
-        rules_dir = Path(__file__).parent / "rules"
-
+@lru_cache(maxsize=1)
+def _load_rules_cached(lang: str, rules_dir_str: str) -> Dict[str, Any]:
+    """Cached implementation - rules_dir must be hashable (string)."""
+    rules_dir = Path(rules_dir_str)
     path = rules_dir / f"{lang}.yaml"
     if not path.is_file():
         raise FileNotFoundError(f"Rules file for language '{lang}' not found at {path}")
 
     with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def load_rules(lang: str, rules_dir: Path = None) -> Dict[str, Any]:
+    """
+    Load typographic rules from a YAML file.
+    Uses caching to avoid repeated file I/O.
+    """
+    if rules_dir is None:
+        rules_dir = Path(__file__).parent / "rules"
+
+    return _load_rules_cached(lang, str(rules_dir.resolve()))
 
 
 def fix_text(text: str, rules: Dict[str, Any]) -> str:
@@ -291,7 +301,7 @@ def main():
 
         if path.suffix.lower() in html_extensions:
             # Use BeautifulSoup for HTML-like files to skip tags/code
-            soup = BeautifulSoup(orig, "html.parser")
+            soup = BeautifulSoup(orig, "lxml")
             process_soup(soup, rules)
             # decode() with default formatter="minimal" is usually best,
             # but we want to ensure NBSP and other symbols are NOT entities.
