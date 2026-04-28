@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/typolima)](https://pypi.org/project/typolima/)
 [![License](https://img.shields.io/pypi/l/typolima?label=License)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-29%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
+[![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
 [![Platform](https://img.shields.io/pypi/implementation/typolima?label=Platform)](https://pypi.org/project/typolima/)
 
 **TypoLima** is a tiny, conservative command-line tool that fixes common typographic issues in HTML, PHP, Hugo templates and plain text files according to language-specific rules.
