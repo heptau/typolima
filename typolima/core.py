@@ -7,6 +7,7 @@ import argparse
 import difflib
 import re
 import sys
+from importlib.metadata import version as get_package_version
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -445,7 +446,7 @@ def main():
     parser = argparse.ArgumentParser(description="typolima – conservative typographic fixer")
     parser.add_argument("path", nargs="+", help="file or directory")
 
-    # Try to find VERSION file
+    # Try to find VERSION file or use package metadata
     version = "unknown"
     # When running as PyInstaller bundle, sys._MEIPASS is the temp folder
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
@@ -453,6 +454,11 @@ def main():
 
     if version_file.is_file():
         version = version_file.read_text().strip()
+    else:
+        try:
+            version = get_package_version("typolima")
+        except Exception:
+            pass
 
     parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
     parser.add_argument("--lang", help="language: cs, sk, pl, en (en-US, en-GB), fr, de, it, es, pt (pt-PT, pt-BR), uk, hu, ro, nl, bg, vi, tr, ru, el, fi, sv, hr, da, no, sl, et, ca, id, tl, sw, eo")
