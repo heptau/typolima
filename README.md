@@ -1,11 +1,11 @@
 # TypoLima – Simple typographic fixer for HTML / text files
 
-[![PyPI](https://img.shields.io/pypi/v/typolima?label=PyPI)](https://pypi.org/project/typolima/)
-[![Python](https://img.shields.io/pypi/pyversions/typolima)](https://pypi.org/project/typolima/)
-[![License](https://img.shields.io/pypi/l/typolima?label=License)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/typolima.svg)](https://pypi.org/project/typolima/)
+[![Python](https://img.shields.io/pypi/pyversions/typolima.svg)](https://pypi.org/project/typolima/)
+[![License](https://img.shields.io/github/license/heptau/typolima)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
 [![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
-[![Platform](https://img.shields.io/pypi/implementation/typolima?label=Platform)](https://pypi.org/project/typolima/)
+[![Platform](https://img.shields.io/pypi/implementation/typolima.svg)](https://pypi.org/project/typolima/)
 
 **TypoLima** is a tiny, conservative command-line tool that fixes common typographic issues in HTML, PHP, Hugo templates and plain text files according to language-specific rules.
 
