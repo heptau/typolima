@@ -93,6 +93,9 @@ typolima site/ --lang fr --recursive --include "*.html" --exclude "*.min.html"
 
 # With backup (creates .bak files)
 typolima *.html --lang cs --in-place --backup
+
+# Auto-detect language from HTML lang attribute, filename, or .typolimarc
+typolima site/ --recursive --auto-detect
 ```
 
 ## Hugo integration example (package.json)
@@ -139,6 +142,9 @@ typolima public/ --lang de --recursive --exclude "_*"
 
 # Create backup before in-place changes
 typolima site/ --lang cs --in-place --backup
+
+# Auto-detect language from HTML lang attribute, filename pattern, or .typolimarc
+typolima site/ --recursive --auto-detect
 ```
 
 ## Troubleshooting

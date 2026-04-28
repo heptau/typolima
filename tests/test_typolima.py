@@ -308,6 +308,39 @@ class TestTypoLima(unittest.TestCase):
             self.assertTrue(Path(str(test_file) + ".bak").exists())
             self.assertEqual(Path(str(test_file) + ".bak").read_text(encoding="utf-8"), '<p>"Hello"</p>')
 
+    def test_detect_lang_from_html(self):
+        from typolima import detect_lang_from_html
+
+        self.assertEqual(detect_lang_from_html('<html lang="cs">'), "cs")
+        self.assertEqual(detect_lang_from_html('<html lang="fr">'), "fr")
+        self.assertEqual(detect_lang_from_html('<html lang="en-US">'), "en-US")
+        self.assertEqual(detect_lang_from_html('<html lang="pt-BR">'), "pt-BR")
+        self.assertIsNone(detect_lang_from_html('<html lang="xx">'))
+        self.assertIsNone(detect_lang_from_html('<html>'))
+
+    def test_detect_lang_from_filename(self):
+        from typolima import detect_lang_from_filename
+
+        self.assertEqual(detect_lang_from_filename(Path("article.cs.html")), "cs")
+        self.assertEqual(detect_lang_from_filename(Path("text.fr.md")), "fr")
+        self.assertEqual(detect_lang_from_filename(Path("readme.en-US.md")), "en-US")
+        self.assertIsNone(detect_lang_from_filename(Path("index.html")))
+        self.assertIsNone(detect_lang_from_filename(Path("README.md")))
+
+    def test_auto_detect_language(self):
+        from typolima import auto_detect_language
+        from pathlib import Path
+
+        html_with_lang = '<html lang="de"><body>Test</body></html>'
+        result = auto_detect_language(Path("test.html"), html_with_lang)
+        self.assertEqual(result, "de")
+
+        result = auto_detect_language(Path("article.cs.md"))
+        self.assertEqual(result, "cs")
+
+        result = auto_detect_language(Path("readme.md"))
+        self.assertIsNone(result)
+
 
 if __name__ == "__main__":
     unittest.main()

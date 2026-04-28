@@ -25,6 +25,115 @@ try:
 except ImportError:
     tqdm = None
 
+LANG_CODE_MAP = {
+    "cs": "cs", "cz": "cs",
+    "sk": "sk",
+    "en": "en", "en-us": "en-US", "en-gb": "en-GB", "en-us": "en-US",
+    "fr": "fr",
+    "de": "de",
+    "it": "it",
+    "es": "es",
+    "pt": "pt", "pt-br": "pt-BR", "pt-pt": "pt-PT",
+    "pl": "pl",
+    "nl": "nl",
+    "hu": "hu",
+    "ro": "ro",
+    "bg": "bg",
+    "uk": "uk",
+    "ru": "ru",
+    "tr": "tr",
+    "vi": "vi",
+    "sv": "sv",
+    "fi": "fi",
+    "no": "no", "nb": "no",
+    "da": "da",
+    "hr": "hr",
+    "sl": "sl",
+    "et": "et",
+    "ca": "ca",
+    "el": "el",
+    "id": "id",
+    "tl": "tl",
+    "sw": "sw",
+    "eo": "eo",
+}
+
+SUPPORTED_LANGS = set(LANG_CODE_MAP.values())
+
+
+def detect_lang_from_html(content: str) -> str:
+    """Detect language from <html lang=""> attribute."""
+    match = re.search(r'<html[^>]+lang=["\']([^"\']+)["\']', content, re.IGNORECASE)
+    if match:
+        lang_raw = match.group(1).lower().strip()
+        if lang_raw in LANG_CODE_MAP:
+            return LANG_CODE_MAP[lang_raw]
+        if lang_raw in SUPPORTED_LANGS:
+            return lang_raw
+    return None
+
+
+def detect_lang_from_filename(path: Path) -> str:
+    """Detect language from filename pattern like article.cs.html or article.en-US.md"""
+    name = path.stem.lower()
+
+    import re
+    match = re.search(r'\.([a-z]{2}(?:-[a-z]{2})?)$', name)
+    if match:
+        lang_raw = match.group(1)
+        if lang_raw in LANG_CODE_MAP:
+            return LANG_CODE_MAP[lang_raw]
+        if lang_raw in SUPPORTED_LANGS:
+            return lang_raw
+
+    return None
+
+
+def detect_lang_from_config(path: Path) -> str:
+    """Detect language from .typolimarc config file in same or parent directory."""
+    search_paths = [path] + list(path.parents)
+
+    for sp in search_paths[:5]:
+        config_file = sp / ".typolimarc"
+        if config_file.is_file():
+            try:
+                with config_file.open(encoding="utf-8") as f:
+                    config = yaml.safe_load(f)
+                if config and isinstance(config, dict):
+                    lang = config.get("language")
+                    if lang and isinstance(lang, str):
+                        if lang in LANG_CODE_MAP:
+                            return LANG_CODE_MAP[lang]
+                        if lang in SUPPORTED_LANGS:
+                            return lang
+            except Exception:
+                pass
+        if (sp / ".git").exists():
+            break
+    return None
+
+
+def auto_detect_language(path: Path, content: str = None) -> str:
+    """Auto-detect language from multiple sources."""
+    # 1. From config file (.typolimarc)
+    lang = detect_lang_from_config(path)
+    if lang:
+        return lang
+
+    # 2. From HTML lang attribute
+    if content:
+        lang = detect_lang_from_html(content)
+        if lang:
+            return lang
+
+    # 3. From filename pattern
+    lang = detect_lang_from_filename(path)
+    if lang:
+        return lang
+
+    return None
+    tqdm = None
+
 
 UNICODE_NBSP = "\u00A0"
 UNICODE_NNBSP = "\u202F"  # narrow NBSP – optional
@@ -327,7 +436,8 @@ def main():
         version = version_file.read_text().strip()
 
     parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
-    parser.add_argument("--lang", required=True, help="language: cs, sk, pl, en (en-US, en-GB), fr, de, it, es, pt (pt-PT, pt-BR), uk, hu, ro, nl, bg, vi, tr, ru, el, fi, sv, hr, da, no, sl, et, ca, id, tl, sw, eo")
+    parser.add_argument("--lang", help="language: cs, sk, pl, en (en-US, en-GB), fr, de, it, es, pt (pt-PT, pt-BR), uk, hu, ro, nl, bg, vi, tr, ru, el, fi, sv, hr, da, no, sl, et, ca, id, tl, sw, eo")
+    parser.add_argument("--auto-detect", "-a", action="store_true", help="auto-detect language from HTML lang attribute, filename, or .typolimarc config")
     parser.add_argument("--in-place", "-i", action="store_true", help="modify files in place")
     parser.add_argument("--backup", "-b", action="store_true", help="create .bak backup before modifying (requires --in-place)")
     parser.add_argument("--dry-run", action="store_true", help="do not write changes")
@@ -339,13 +449,20 @@ def main():
 
     args = parser.parse_args()
 
-    try:
-        rules = load_rules(args.lang)
-        if args.aggressive:
-            rules["_aggressive_active"] = True
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    if not args.lang and not args.auto_detect:
+        print("Error: either --lang or --auto-detect is required", file=sys.stderr)
         sys.exit(2)
+
+    # If not auto-detect, load rules once
+    default_rules = None
+    if not args.auto_detect:
+        try:
+            default_rules = load_rules(args.lang)
+            if args.aggressive:
+                default_rules["_aggressive_active"] = True
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
 
     default_extensions = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
 
@@ -401,6 +518,24 @@ def main():
             print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
             errors += 1
             continue
+
+        # Determine which rules to use
+        if args.auto_detect:
+            detected_lang = auto_detect_language(path, orig if path.suffix.lower() in html_extensions else None)
+            if not detected_lang:
+                print(f"Warning: could not detect language for {path}, skipping", file=sys.stderr)
+                errors += 1
+                continue
+            try:
+                rules = load_rules(detected_lang)
+                if args.aggressive:
+                    rules["_aggressive_active"] = True
+            except FileNotFoundError:
+                print(f"Warning: rules not found for detected language '{detected_lang}' for {path}", file=sys.stderr)
+                errors += 1
+                continue
+        else:
+            rules = default_rules
 
         try:
             if path.suffix.lower() in html_extensions:
