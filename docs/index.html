@@ -288,6 +288,8 @@ typolima public/ --lang cs --recursive --in-place</code></pre>
                 <li><code>--diff</code> — Show detailed diff (requires --dry-run)</li>
                 <li><code>--recursive</code> — Process directories recursively</li>
                 <li><code>--aggressive</code> — Convert (c) → ©, +- → ±, etc.</li>
+                <li><code>--include PATTERN</code> — Include files matching glob pattern (can be used multiple times)</li>
+                <li><code>--exclude PATTERN</code> — Exclude files matching glob pattern (can be used multiple times)</li>
             </ul>
         </section>
 
@@ -311,6 +313,16 @@ typolima public/ --lang cs --recursive --in-place</code></pre>
             <h3>Aggressive mode</h3>
             <pre><code>typolima text.md --lang en --aggressive</code></pre>
             <p>Converts: (c) → ©, (tm) → ™, -> → →, ==&gt; → ⟹</p>
+
+            <h3>File filtering with include/exclude</h3>
+            <pre><code># Include only HTML files
+typolima site/ --lang cs --recursive --include "*.html"
+
+# Exclude partials (files starting with _)
+typolima public/ --lang de --recursive --exclude "_*"
+
+# Combined: include html but exclude minified
+typolima site/ --lang fr --include "*.html" --exclude "*.min.html"</code></pre>
         </section>
 
         <div class="cta">

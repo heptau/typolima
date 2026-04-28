@@ -333,6 +333,8 @@ def main():
     parser.add_argument("--diff", action="store_true", help="show diff (requires --dry-run)")
     parser.add_argument("--recursive", "-r", action="store_true", help="process directories recursively")
     parser.add_argument("--aggressive", action="store_true", help="convert (c) to ©, +- to ±, etc.")
+    parser.add_argument("--include", metavar="PATTERN", action="append", default=[], help="include files matching pattern (glob). Can be used multiple times")
+    parser.add_argument("--exclude", metavar="PATTERN", action="append", default=[], help="exclude files matching pattern (glob). Can be used multiple times")
 
     args = parser.parse_args()
 
@@ -344,15 +346,46 @@ def main():
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(2)
 
-    extensions = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+    default_extensions = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+
+    def matches_pattern(path: Path, patterns: list) -> bool:
+        """Check if path matches any of the glob patterns."""
+        import fnmatch
+        name = path.name
+        for pattern in patterns:
+            if fnmatch.fnmatch(name, pattern) or fnmatch.fnmatch(str(path), pattern):
+                return True
+        return False
+
+    def should_include(path: Path) -> bool:
+        """Check if file should be included based on include/exclude patterns."""
+        name = path.name.lower()
+        ext = path.suffix.lower()
+
+        if args.include:
+            if not matches_pattern(path, args.include):
+                return False
+        else:
+            if not any(name.endswith(e) for e in default_extensions):
+                return False
+
+        if args.exclude:
+            if matches_pattern(path, args.exclude):
+                return False
+
+        return True
+
     paths = []
     for p in args.path:
         path = Path(p)
         if path.is_dir() and args.recursive:
-            for ext in extensions:
-                paths.extend(path.rglob(f"*{ext}"))
+            for ext in default_extensions:
+                for f in path.rglob(f"*{ext}"):
+                    if should_include(f):
+                        paths.append(f)
         elif path.is_file():
-            paths.append(path)
+            if should_include(path):
+                paths.append(path)
 
     changed = 0
     errors = 0

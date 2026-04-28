@@ -125,6 +125,168 @@ class TestTypoLima(unittest.TestCase):
             typolima.validate_rules(rules, "ts")
         self.assertIn("non_breaking_prepositions", str(ctx.exception))
 
+    def test_include_patterns(self):
+        import fnmatch
+        patterns = ["*.md", "*.txt"]
+        self.assertTrue(fnmatch.fnmatch("about.md", "*.md"))
+        self.assertTrue(fnmatch.fnmatch("readme.txt", "*.txt"))
+        self.assertFalse(fnmatch.fnmatch("index.html", "*.md"))
+
+    def test_exclude_patterns(self):
+        import fnmatch
+        patterns = ["_*", "*.min.js"]
+        self.assertTrue(fnmatch.fnmatch("_header.html", "_*"))
+        self.assertTrue(fnmatch.fnmatch("app.min.js", "*.min.js"))
+        self.assertFalse(fnmatch.fnmatch("app.js", "*.min.js"))
+
+    def test_should_include_with_default_extensions(self):
+        from pathlib import Path
+        import fnmatch as fm
+
+        class MockArgs:
+            include = []
+            exclude = []
+
+        default_exts = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+
+        def matches_pattern(path, patterns):
+            for p in patterns:
+                if fm.fnmatch(path.name, p) or fm.fnmatch(str(path), p):
+                    return True
+            return False
+
+        def should_include(path, args):
+            name = path.name.lower()
+            if args.include:
+                if not matches_pattern(path, args.include):
+                    return False
+            else:
+                if not any(name.endswith(e) for e in default_exts):
+                    return False
+            if args.exclude:
+                if matches_pattern(path, args.exclude):
+                    return False
+            return True
+
+        args = MockArgs()
+        args.include = []
+        args.exclude = []
+
+        self.assertTrue(should_include(Path("index.html"), args))
+        self.assertTrue(should_include(Path("readme.md"), args))
+        self.assertFalse(should_include(Path("script.js"), args))
+        self.assertFalse(should_include(Path("image.png"), args))
+
+    def test_should_include_with_include_pattern(self):
+        import fnmatch as fm
+
+        class MockArgs:
+            include = []
+            exclude = []
+
+        default_exts = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+
+        def matches_pattern(path, patterns):
+            for p in patterns:
+                if fm.fnmatch(path.name, p) or fm.fnmatch(str(path), p):
+                    return True
+            return False
+
+        def should_include(path, args):
+            name = path.name.lower()
+            if args.include:
+                if not matches_pattern(path, args.include):
+                    return False
+            else:
+                if not any(name.endswith(e) for e in default_exts):
+                    return False
+            if args.exclude:
+                if matches_pattern(path, args.exclude):
+                    return False
+            return True
+
+        args = MockArgs()
+        args.include = ["*.md", "*.txt"]
+        args.exclude = []
+
+        self.assertTrue(should_include(Path("readme.md"), args))
+        self.assertTrue(should_include(Path("notes.txt"), args))
+        self.assertFalse(should_include(Path("index.html"), args))
+
+    def test_should_include_with_exclude_pattern(self):
+        import fnmatch as fm
+
+        class MockArgs:
+            include = []
+            exclude = []
+
+        default_exts = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+
+        def matches_pattern(path, patterns):
+            for p in patterns:
+                if fm.fnmatch(path.name, p) or fm.fnmatch(str(path), p):
+                    return True
+            return False
+
+        def should_include(path, args):
+            name = path.name.lower()
+            if args.include:
+                if not matches_pattern(path, args.include):
+                    return False
+            else:
+                if not any(name.endswith(e) for e in default_exts):
+                    return False
+            if args.exclude:
+                if matches_pattern(path, args.exclude):
+                    return False
+            return True
+
+        args = MockArgs()
+        args.include = []
+        args.exclude = ["_*", "*.min.*"]
+
+        self.assertTrue(should_include(Path("index.html"), args))
+        self.assertFalse(should_include(Path("_header.html"), args))
+        self.assertFalse(should_include(Path("style.min.css"), args))
+        self.assertFalse(should_include(Path("app.min.js"), args))
+
+    def test_should_include_combined_include_exclude(self):
+        import fnmatch as fm
+
+        class MockArgs:
+            include = []
+            exclude = []
+
+        default_exts = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
+
+        def matches_pattern(path, patterns):
+            for p in patterns:
+                if fm.fnmatch(path.name, p) or fm.fnmatch(str(path), p):
+                    return True
+            return False
+
+        def should_include(path, args):
+            name = path.name.lower()
+            if args.include:
+                if not matches_pattern(path, args.include):
+                    return False
+            else:
+                if not any(name.endswith(e) for e in default_exts):
+                    return False
+            if args.exclude:
+                if matches_pattern(path, args.exclude):
+                    return False
+            return True
+
+        args = MockArgs()
+        args.include = ["*.html", "*.md"]
+        args.exclude = ["_*", "*.min.*"]
+
+        self.assertTrue(should_include(Path("index.html"), args))
+        self.assertTrue(should_include(Path("about.md"), args))
+        self.assertFalse(should_include(Path("_partial.html"), args))
+        self.assertFalse(should_include(Path("bundle.min.html"), args))
+
 
 if __name__ == "__main__":
     unittest.main()

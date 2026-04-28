@@ -75,6 +75,15 @@ typolima public/ --lang cs --recursive --in-place
 
 # More aggressive mode (convert (c) to ©, +- to ± etc.)
 typolima text.md --lang en --aggressive
+
+# Include only specific file types
+typolima content/ --lang cs --recursive --include "*.html" --include "*.md"
+
+# Exclude certain files (e.g., partials, includes)
+typolima public/ --lang de --recursive --exclude "_*"
+
+# Combine include and exclude
+typolima site/ --lang fr --recursive --include "*.html" --exclude "*.min.html"
 ```
 
 ## Hugo integration example (package.json)
@@ -112,6 +121,12 @@ typolima site/*.html site/*.php --lang de --in-place
 
 # Show detailed diff before applying
 typolima public/ --lang fr --diff --dry-run
+
+# Include only specific file patterns (glob)
+typolima site/ --lang cs --recursive --include "*.html"
+
+# Exclude files matching pattern
+typolima public/ --lang de --recursive --exclude "_*"
 ```
 
 ## Troubleshooting
