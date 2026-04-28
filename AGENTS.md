@@ -7,12 +7,15 @@
 1. **Conservative:** If in doubt, do nothing. Do not break HTML tags, scripts, or templates (Hugo, PHP).
 2. **Language-Specific:** Rules are defined in YAML files per language code (e.g., `cs.yaml`, `en.yaml`).
 3. **Transparent:** Dry-run and diff modes show exactly what would change before any file is modified.
+4. **Auto-detection:** Can detect language from HTML `lang` attribute, filename patterns (e.g., `article.cs.html`), or `.typolimarc` config.
 
 ## Tech Stack
 - **Python 3.9+**
 - **BeautifulSoup4:** For robust HTML parsing and manipulation.
+- **lxml:** Fast HTML parser (replaces html.parser).
 - **PyYAML:** For loading language-specific rules.
 - **difflib:** Standard library for generating diffs.
+- **tqdm:** Progress bar for processing many files.
 
 ## Project Structure
 - `pyproject.toml`: Modern Python package configuration.
@@ -20,8 +23,8 @@
   - `core.py`: Main typographic fixing logic.
   - `rules/`: Language-specific YAML rules.
   - `__main__.py`: CLI entry point.
-- `tests/`: Unittest-based test suite.
-- `AICONTEXT.md`: This context file.
+- `tests/`: Unittest-based test suite (29 tests).
+- `docs/`: Documentation website (SEO-friendly HTML).
 - `CONTRIBUTING.md`: Guidelines for contributors (code style, English comments, rules).
 - `Makefile`: Build and release automation.
 - `VERSION`: Single source of truth for versioning.
@@ -35,13 +38,17 @@
 - **Aggressive mode:** Optional conversion of symbols like `(c)` to `©`, `+-` to `±`.
 
 ## Roadmap / Improvements
-- [x] Add robust testing suite (`unittest`).
+- [x] Add robust testing suite (29 tests).
 - [x] Implement basic `--aggressive` mode (symbols, etc.).
-- [x] Add more languages (16 languages supported).
+- [x] Add more languages (33+ languages supported).
 - [x] Automate builds and releases (Makefile + GoReleaser).
+- [x] Better CLI progress indicators for large projects (tqdm).
 - [ ] Support for LaTeX or Markdown-specific enhanced typography.
-- [ ] Better CLI progress indicators for large projects.
+- [ ] GitHub Actions CI for automated testing.
 
 ## Rules for AI Agents
 - **Strictly follow `CONTRIBUTING.md`** for code style, documentation, and mandatory English comments.
-- Always run `make test` before pushing any changes to the rules or core logic.
+- Always run `pytest tests/` before pushing any changes to the rules or core logic.
+- New CLI options: `--include`, `--exclude`, `--backup`, `--auto-detect`
+- Use `lxml` parser for HTML files (faster than html.parser)
+- Rules loading uses caching (`@lru_cache`) for performance
