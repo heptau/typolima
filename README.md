@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/typolima?label=PyPI)](https://pypi.org/project/typolima/)
 [![Python](https://img.shields.io/github/actions/workflow/status/heptau/typolima/test.yml?label=Python)](https://github.com/heptau/typolima/actions)
-[![License](https://img.shields.io/github/license/heptau/typolima)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
 [![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
 [![Platform](https://img.shields.io/github/v/tag/heptau/typolima?label=Version)](https://github.com/heptau/typolima/releases)
