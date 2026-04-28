@@ -1,0 +1,28 @@
+# TypoLima configuration file
+# Place this file in your project root to set default options
+
+# Default language for auto-detection fallback
+language: cs
+
+# Automatically detect language from HTML lang attribute or filename
+# auto_detect: true
+
+# Process directories recursively
+recursive: true
+
+# Files to exclude (glob patterns)
+exclude:
+  - "_*"
+  - "*.min.*"
+  - "node_modules/*"
+
+# Files to include (if set, only these will be processed)
+# include:
+#   - "*.html"
+#   - "*.md"
+
+# Create backup before in-place changes
+# backup: true
+
+# Enable aggressive mode (convert (c) to ©, etc.)
+# aggressive: true

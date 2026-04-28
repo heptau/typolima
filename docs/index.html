@@ -335,6 +335,16 @@ typolima site/ --lang cs --in-place --backup</code></pre>
             <pre><code># Auto-detect from HTML lang attribute, filename pattern, or .typolimarc
 typolima site/ --recursive --auto-detect</code></pre>
             <p>Automatically detects language from: <code>&lt;html lang="fr"&gt;</code>, filename like <code>article.cs.html</code>, or <code>.typolimarc</code> config file.</p>
+
+            <h3>Config File</h3>
+            <pre><code># .typolimarc example
+language: cs
+recursive: true
+exclude:
+  - "_*"
+  - "*.min.*"
+</code></pre>
+            <p>Place <code>.typolimarc</code> in your project root to set default options.</p>
         </section>
 
         <div class="cta">

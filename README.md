@@ -148,6 +148,20 @@ typolima site/ --lang cs --in-place --backup
 typolima site/ --recursive --auto-detect
 ```
 
+### Config File
+
+Create a `.typolimarc` file in your project root for default settings:
+
+```yaml
+language: cs
+recursive: true
+exclude:
+  - "_*"
+  - "*.min.*"
+```
+
+Example file: [`.typolimarc.example`](.typolimarc.example)
+
 ## Troubleshooting
 
 **"Error: missing dependencies"**
