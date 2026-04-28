@@ -21,17 +21,13 @@ It only touches **text content** (never tags, attributes, scripts, style blocks,
 - Very conservative – skips uncertain cases
 - Works on HTML, PHP, Hugo templates, Markdown …
 
-## Supported languages (2026)
+## Supported languages (33+ languages)
 
-| Code | Language     | Quotes       | Thousands sep | Decimal sep | NBSP before units? | Special                     |
-|------|--------------|--------------|---------------|-------------|--------------------|-----------------------------|
-| cs   | Čeština      | „ “          | &nbsp;        | ,           | yes                | v s z k o u a i             |
-| en   | English      | “ ”          | ,             | .           | yes                |                             |
-| fr   | Français     | « »          | &nbsp;        | ,           | yes                | space before ? ! : ; »      |
-| de   | Deutsch      | „ “          | .             | ,           | yes                |                             |
-| it   | Italiano     | « » / “ ”    | .             | ,           | yes                |                             |
-| es   | Español      | « »          | .             | ,           | yes                |                             |
-| pt   | Português    | « » / “ ”    | .             | ,           | yes                |                             |
+**European:** cs, sk, pl, en (en-US, en-GB), de, fr, it, es, pt (pt-PT, pt-BR), nl, hu, ro, bg, uk, ru, el, fi, sv, no, da, hr, sl, et, ca
+
+**Other:** tr, vi, id, tl (Tagalog), sw (Swahili), eo (Esperanto)
+
+Run `typolima --lang cs` (use any supported code) to process files.
 
 ## Installation
 
@@ -96,6 +92,45 @@ typolima text.md --lang en --aggressive
 - NBSP after prepositions only when very clear context
 - Skips anything inside <code>, <pre>, <script>, {{ … }}, <?php … ?>
 - `--dry-run --diff` always shows colorful diff first
+
+## Configuration
+
+### Language-specific options
+- `--lang cs` – Czech
+- `--lang en` – English (default)
+- `--lang en-US` / `--lang en-GB` – US/UK English variants
+- `--lang pt-BR` / `--lang pt-PT` – Portuguese variants
+- See `--help` for full list
+
+### Common use cases
+```bash
+# Process multiple file types
+typolima content/ --lang cs --recursive --dry-run
+
+# Fix specific extensions only
+typolima site/*.html site/*.php --lang de --in-place
+
+# Show detailed diff before applying
+typolima public/ --lang fr --diff --dry-run
+```
+
+## Troubleshooting
+
+**"Error: missing dependencies"**
+```bash
+pip install beautifulsoup4 lxml pyyaml
+```
+
+**"Rules file not found"**
+Make sure you're using a valid language code from the supported list.
+
+**File not changing?**
+- Use `--dry-run --diff` to see what would be changed
+- Check if file has proper UTF-8 encoding
+- Ensure text contains patterns matching the language rules
+
+**Performance issues with many files?**
+Use `--recursive` flag which enables caching and optimizations.
 
 ## More Information
 

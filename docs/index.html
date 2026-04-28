@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TypoLima - Conservative typographic fixer for HTML, PHP, Hugo templates and text files. Automatically fixes quotes, dashes, non-breaking spaces and more for 33+ languages.">
+    <meta name="keywords" content="typography, typographic fixer, HTML, Hugo, Markdown, typographic, polish text, quotes, non-breaking space">
+    <meta name="author" content="tvujnick">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="TypoLima - Typographic Fixer for HTML & Text">
+    <meta property="og:description" content="Conservative tool that fixes typographic issues in HTML, PHP, Hugo templates and text files according to language-specific rules.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/heptau/typolima">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>TypoLima - Conservative Typographic Fixer for HTML & Text</title>
+    <link rel="canonical" href="https://github.com/heptau/typolima">
+    <style>
+        :root {
+            --primary: #2c5f2d;
+            --primary-dark: #1e3d1c;
+            --accent: #97bc62;
+            --bg: #fafafa;
+            --text: #333;
+            --text-light: #666;
+            --code-bg: #f4f4f4;
+            --border: #e0e0e0;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+        header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        header p { opacity: 0.9; font-size: 1.1rem; }
+        nav {
+            background: var(--primary-dark);
+            padding: 0.75rem;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: 500;
+        }
+        nav a:hover { text-decoration: underline; }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        section { margin-bottom: 3rem; }
+        h2 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+        h3 { color: var(--primary-dark); margin: 1.5rem 0 0.5rem; }
+        p { margin-bottom: 1rem; }
+        ul, ol { margin: 1rem 0 1rem 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+        code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: var(--radius);
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        pre code { background: none; padding: 0; color: inherit; }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .feature {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .feature h4 { color: var(--primary); margin-bottom: 0.5rem; }
+        .lang-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .lang-table th, .lang-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .lang-table th { background: var(--primary); color: white; }
+        .lang-table tr:hover { background: var(--code-bg); }
+        .install-method {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin: 1rem 0;
+        }
+        .install-method h3 { margin-top: 0; }
+        .cta {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius);
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .cta h3 { color: white; margin-top: 0; }
+        .cta a {
+            display: inline-block;
+            background: white;
+            color: var(--primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+        .cta a:hover { background: var(--accent); }
+        footer {
+            background: var(--primary-dark);
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-top: 3rem;
+        }
+        footer a { color: var(--accent); }
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.8rem; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TypoLima</h1>
+        <p>Conservative typographic fixer for HTML, PHP, Hugo templates and text files</p>
+    </header>
+
+    <nav>
+        <a href="#features">Features</a>
+        <a href="#languages">Languages</a>
+        <a href="#installation">Installation</a>
+        <a href="#usage">Usage</a>
+        <a href="#examples">Examples</a>
+    </nav>
+
+    <div class="container">
+        <section id="about">
+            <h2>What is TypoLima?</h2>
+            <p>TypoLima is a command-line tool that automatically fixes common typographic issues in web content while being extremely careful not to break code. It only touches <strong>text content</strong> — never HTML tags, attributes, scripts, or template variables like <code>{{ }}</code> or <code>&lt;?php ?&gt;</code>.</p>
+            <p>The name comes from the Latin word <em>lima</em> (file/polish), representing the final meticulous polishing of a text — <em>labor limae</em>.</p>
+        </section>
+
+        <section id="features">
+            <h2>Features</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <h4>Smart Quotes</h4>
+                    <p>Converts straight quotes to language-specific curly quotes: „ " for Czech, « » for French, " " for English, etc.</p>
+                </div>
+                <div class="feature">
+                    <h4>Non-Breaking Spaces</h4>
+                    <p>Automatically adds NBSP after single-letter prepositions (cs: v, s, z, k, o, u, a, i) and before units (5 kg, 20 %, 10 €).</p>
+                </div>
+                <div class="feature">
+                    <h4>Intelligent Dashes</h4>
+                    <p>Converts -- to en-dash (–) for ranges (10–20) and em-dash (—) for parenthetical thoughts with proper spacing.</p>
+                </div>
+                <div class="feature">
+                    <h4>Smart Punctuation</h4>
+                    <p>French spacing: adds space before ? ! : ; «. Thousands separators and decimal points per language.</p>
+                </div>
+                <div class="feature">
+                    <h4>Abbreviations</h4>
+                    <p>Fixes common abbreviations: s. r. o., tj., tzn., a.s. with proper non-breaking spaces.</p>
+                </div>
+                <div class="feature">
+                    <h4>Aggressive Mode</h4>
+                    <p>Optional conversion: (c) → ©, (r) → ®, (tm) → ™, +- → ±, -> → →, etc.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="languages">
+            <h2>Supported Languages</h2>
+            <p>TypoLima supports <strong>33+ languages</strong> with language-specific rules for quotes, spacing, and punctuation:</p>
+            <table class="lang-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Language</th>
+                        <th>Quotes</th>
+                        <th>Special Features</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>cs</td><td>Czech</td><td>„ "</td><td>Prepositions, s.r.o.</td></tr>
+                    <tr><td>sk</td><td>Slovak</td><td>„ "</td><td>Prepositions</td></tr>
+                    <tr><td>en / en-US / en-GB</td><td>English</td><td>" "</td><td>Thousands sep</td></tr>
+                    <tr><td>fr</td><td>French</td><td>« »</td><td>Space before ?!:;</td></tr>
+                    <tr><td>de</td><td>German</td><td>„ "</td><td>Thousands sep</td></tr>
+                    <tr><td>it</td><td>Italian</td><td>« »</td><td></td></tr>
+                    <tr><td>es</td><td>Spanish</td><td>« »</td><td></td></tr>
+                    <tr><td>pt / pt-PT / pt-BR</td><td>Portuguese</td><td>« »</td><td></td></tr>
+                    <tr><td>pl</td><td>Polish</td><td>„ "</td><td></td></tr>
+                    <tr><td>nl</td><td>Dutch</td><td>„ "</td><td></td></tr>
+                    <tr><td>hu</td><td>Hungarian</td><td>„ "</td><td></td></tr>
+                    <tr><td>ru</td><td>Russian</td><td>« »</td><td></td></tr>
+                    <tr><td>uk</td><td>Ukrainian</td><td>« »</td><td></td></tr>
+                    <tr><td>bg</td><td>Bulgarian</td><td>„ "</td><td></td></tr>
+                    <tr><td>+ 15 more</td><td>ro, tr, vi, sv, fi, no, da, hr, sl, et, ca, el, id, tl, sw, eo</td><td>Various</td><td></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="installation">
+            <h2>Installation</h2>
+            
+            <div class="install-method">
+                <h3>macOS — Homebrew (Recommended)</h3>
+                <pre><code>brew install heptau/tap/typolima</code></pre>
+            </div>
+
+            <div class="install-method">
+                <h3>pipx (Isolated)</h3>
+                <pre><code>pipx install git+https://github.com/heptau/typolima.git</code></pre>
+            </div>
+
+            <div class="install-method">
+                <h3>pip</h3>
+                <pre><code>pip install git+https://github.com/heptau/typolima.git</code></pre>
+            </div>
+
+            <div class="install-method">
+                <h3>From Source</h3>
+                <pre><code>git clone https://github.com/heptau/typolima.git
+cd typolima
+pip install .</code></pre>
+            </div>
+        </section>
+
+        <section id="usage">
+            <h2>Usage</h2>
+            <h3>Basic Commands</h3>
+            <pre><code>typolima --help
+
+# Process a single file
+typolima article.html --lang cs --in-place
+
+# Dry run with diff
+typolima *.html --lang en --dry-run --diff
+
+# Recursive processing
+typolima public/ --lang cs --recursive --in-place</code></pre>
+
+            <h3>Options</h3>
+            <ul>
+                <li><code>--lang</code> — Language code (cs, en, fr, de, etc.)</li>
+                <li><code>--in-place</code> — Modify files in place (default: output to stdout)</li>
+                <li><code>--dry-run</code> — Show what would be changed without modifying</li>
+                <li><code>--diff</code> — Show detailed diff (requires --dry-run)</li>
+                <li><code>--recursive</code> — Process directories recursively</li>
+                <li><code>--aggressive</code> — Convert (c) → ©, +- → ±, etc.</li>
+            </ul>
+        </section>
+
+        <section id="examples">
+            <h2>Examples</h2>
+            
+            <h3>Fix Czech HTML files</h3>
+            <pre><code>typolima content/*.html --lang cs --in-place</code></pre>
+            <p>Before: <code>"Ahoj" jdu k lesu</code><br>
+            After: <code>„Ahoj" jdu k&nbsp;lesu</code></p>
+
+            <h3>French with diff</h3>
+            <pre><code>typolima public/ --lang fr --recursive --dry-run --diff</code></pre>
+            <p>Before: <code>Salut?</code><br>
+            After: <code>Salut&nbsp;?</code></p>
+
+            <h3>Hugo post-build</h3>
+            <pre><code>typolima public/ --lang cs --recursive --in-place</code></pre>
+            <p>Add to package.json: <code>"postbuild": "typolima public/ --lang cs --recursive --in-place"</code></p>
+
+            <h3>Aggressive mode</h3>
+            <pre><code>typolima text.md --lang en --aggressive</code></pre>
+            <p>Converts: (c) → ©, (tm) → ™, -> → →, ==&gt; → ⟹</p>
+        </section>
+
+        <div class="cta">
+            <h3>Ready to polish your text?</h3>
+            <p>TypoLima is free and open source.</p>
+            <a href="https://github.com/heptau/typolima">View on GitHub →</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>TypoLima — Conservative typographic fixer</p>
+        <p><a href="https://github.com/heptau/typolima">GitHub</a> · <a href="https://github.com/heptau/typolima/releases">Releases</a></p>
+    </footer>
+</body>
+</html>
