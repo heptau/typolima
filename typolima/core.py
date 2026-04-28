@@ -465,6 +465,7 @@ def main():
     parser.add_argument("--aggressive", action="store_true", help="convert (c) to ©, +- to ±, etc.")
     parser.add_argument("--include", metavar="PATTERN", action="append", default=[], help="include files matching pattern (glob). Can be used multiple times")
     parser.add_argument("--exclude", metavar="PATTERN", action="append", default=[], help="exclude files matching pattern (glob). Can be used multiple times")
+    parser.add_argument("--verbose", "-v", action="store_true", help="show detailed statistics about changes")
 
     args = parser.parse_args()
 
@@ -554,6 +555,7 @@ def main():
     changed = 0
     errors = 0
     html_extensions = [".html", ".htm", ".php", ".hbs", ".liquid", ".latte"]
+    stats = {"quotes": 0, "dashes": 0, "nbsp": 0, "apostrophes": 0, "symbols": 0, "spaces": 0}
 
     iterator = tqdm(paths, desc="Processing", unit="file", disable=not sys.stdout.isatty()) if tqdm and len(paths) > 1 else paths
 
@@ -599,6 +601,18 @@ def main():
             continue
 
         changed += 1
+
+        if args.verbose:
+            q_before = orig.count('"')
+            q_after = new.count('"')
+            d_before = orig.count('-')
+            d_after = new.count('-') + new.count('–') + new.count('—')
+            nbsp_before = orig.count('\u00a0')
+            nbsp_after = new.count('\u00a0')
+            stats["quotes"] += max(0, q_after - q_before)
+            stats["dashes"] += max(0, d_after - d_before)
+            stats["nbsp"] += max(0, nbsp_after - nbsp_before)
+
         if args.dry_run:
             if args.diff:
                 print(f"--- {path}")
@@ -633,6 +647,15 @@ def main():
 
     if errors > 0:
         print(f"\n{errors} file(s) skipped due to errors", file=sys.stderr)
+
+    if args.verbose and changed > 0:
+        print("\n--- Change Statistics ---")
+        if stats["quotes"]:
+            print(f"  Quotes fixed: {stats['quotes']}")
+        if stats["dashes"]:
+            print(f"  Dashes converted: {stats['dashes']}")
+        if stats["nbsp"]:
+            print(f"  Non-breaking spaces added: {stats['nbsp']}")
 
 
 if __name__ == "__main__":
