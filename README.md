@@ -97,6 +97,9 @@ typolima *.html --lang cs --in-place --backup
 
 # Auto-detect language from HTML lang attribute, filename, or .typolimarc
 typolima site/ --recursive --auto-detect
+
+# Show detailed statistics about changes (quotes, dashes, NBSP count)
+typolima site/ --lang cs --verbose
 ```
 
 ## Hugo integration example (package.json)

@@ -292,6 +292,7 @@ typolima public/ --lang cs --recursive --in-place</code></pre>
                 <li><code>--exclude PATTERN</code> — Exclude files matching glob pattern (can be used multiple times)</li>
                 <li><code>--backup</code> — Create .bak backup before modifying (requires --in-place)</li>
                 <li><code>--auto-detect</code> — Auto-detect language from HTML lang attribute, filename, or .typolimarc config</li>
+                <li><code>--verbose</code> — Show detailed statistics about changes (quotes, dashes, NBSP count)</li>
             </ul>
         </section>
 
@@ -335,6 +336,11 @@ typolima site/ --lang cs --in-place --backup</code></pre>
             <pre><code># Auto-detect from HTML lang attribute, filename pattern, or .typolimarc
 typolima site/ --recursive --auto-detect</code></pre>
             <p>Automatically detects language from: <code>&lt;html lang="fr"&gt;</code>, filename like <code>article.cs.html</code>, or <code>.typolimarc</code> config file.</p>
+
+            <h3>Verbose statistics</h3>
+            <pre><code># Show detailed statistics about changes
+typolima site/ --lang cs --verbose</code></pre>
+            <p>Shows: Changed files count, quotes fixed, dashes converted, NBSP inserted.</p>
 
             <h3>Config File</h3>
             <pre><code># .typolimarc example
