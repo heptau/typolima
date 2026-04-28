@@ -1,11 +1,10 @@
 # TypoLima – Simple typographic fixer for HTML / text files
 
-[![PyPI](https://img.shields.io/pypi/v/typolima?label=PyPI)](https://pypi.org/project/typolima/)
 [![Python](https://img.shields.io/github/actions/workflow/status/heptau/typolima/test.yml?label=Python)](https://github.com/heptau/typolima/actions)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
 [![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
-[![Platform](https://img.shields.io/github/v/tag/heptau/typolima?label=Version)](https://github.com/heptau/typolima/releases)
+[![Version](https://img.shields.io/github/v/tag/heptau/typolima?label=Version)](https://github.com/heptau/typolima/releases)
 
 **TypoLima** is a tiny, conservative command-line tool that fixes common typographic issues in HTML, PHP, Hugo templates and plain text files according to language-specific rules.
 
@@ -45,21 +44,12 @@ If you use Homebrew, you can install TypoLima directly from the heptau tap:
 brew install heptau/tap/typolima
 ```
 
-**Option B – via pipx (Isolated installation)**  
-This is the cleanest way to install Python CLI tools without affecting your system Python.
-
-```bash
-pipx install git+https://github.com/heptau/typolima.git
-```
-
-**Option C – via pip**
-You can also install it directly from GitHub using pip:
-
+**Option B – via pip (from GitHub)**
 ```bash
 pip install git+https://github.com/heptau/typolima.git
 ```
 
-**Option D – From source**
+**Option C – From source**
 ```bash
 git clone https://github.com/heptau/typolima.git
 cd typolima

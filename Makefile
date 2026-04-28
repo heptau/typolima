@@ -8,8 +8,7 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  build-pip      Build Python source and wheel distribution"
-	@echo "  publish-pip    Upload to PyPI (requires TWINE_PASSWORD)"
+	@echo "  build-pip      Build Python wheel distribution"
 	@echo "  build-bin      Build standalone binary (using PyInstaller)"
 	@echo "  release        Full release using GoReleaser (requires tag)"
 	@echo "  snapshot       Local release test using GoReleaser"
@@ -29,12 +28,6 @@ build-pip: clean
 	@echo "Building pip package..."
 	@mkdir -p $(DIST_DIR)
 	@$(PYTHON) -m build --outdir $(DIST_DIR)
-
-.PHONY: publish-pip
-publish-pip: build-pip
-	@echo "Publishing to PyPI..."
-	@$(PYTHON) -m twine upload $(DIST_DIR)/*
-	@echo "Published to PyPI!"
 
 .PHONY: build-bin
 build-bin:
