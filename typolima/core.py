@@ -329,6 +329,7 @@ def main():
     parser.add_argument("--version", action="version", version=f"%(prog)s {version}")
     parser.add_argument("--lang", required=True, help="language: cs, sk, pl, en (en-US, en-GB), fr, de, it, es, pt (pt-PT, pt-BR), uk, hu, ro, nl, bg, vi, tr, ru, el, fi, sv, hr, da, no, sl, et, ca, id, tl, sw, eo")
     parser.add_argument("--in-place", "-i", action="store_true", help="modify files in place")
+    parser.add_argument("--backup", "-b", action="store_true", help="create .bak backup before modifying (requires --in-place)")
     parser.add_argument("--dry-run", action="store_true", help="do not write changes")
     parser.add_argument("--diff", action="store_true", help="show diff (requires --dry-run)")
     parser.add_argument("--recursive", "-r", action="store_true", help="process directories recursively")
@@ -433,6 +434,9 @@ def main():
         else:
             if args.in_place:
                 try:
+                    if args.backup:
+                        import shutil
+                        shutil.copy2(path, Path(str(path) + ".bak"))
                     path.write_text(new, encoding="utf-8")
                     print(f"Fixed: {path}")
                 except OSError as e:

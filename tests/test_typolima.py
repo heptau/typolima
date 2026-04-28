@@ -287,6 +287,27 @@ class TestTypoLima(unittest.TestCase):
         self.assertFalse(should_include(Path("_partial.html"), args))
         self.assertFalse(should_include(Path("bundle.min.html"), args))
 
+    def test_backup_creates_bak_file(self):
+        import shutil
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.html"
+            test_file.write_text('<p>"Hello"</p>', encoding="utf-8")
+
+            rules = typolima.load_rules("en", self.rules_dir)
+            new = typolima.fix_text(test_file.read_text(encoding="utf-8"), rules)
+
+            import os
+            shutil.copy2(test_file, Path(str(test_file) + ".bak"))
+
+            test_file.write_text(new, encoding="utf-8")
+
+            self.assertTrue(test_file.exists())
+            self.assertTrue(Path(str(test_file) + ".bak").exists())
+            self.assertEqual(Path(str(test_file) + ".bak").read_text(encoding="utf-8"), '<p>"Hello"</p>')
+
 
 if __name__ == "__main__":
     unittest.main()

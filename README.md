@@ -90,6 +90,9 @@ typolima public/ --lang de --recursive --exclude "_*"
 
 # Combine include and exclude
 typolima site/ --lang fr --recursive --include "*.html" --exclude "*.min.html"
+
+# With backup (creates .bak files)
+typolima *.html --lang cs --in-place --backup
 ```
 
 ## Hugo integration example (package.json)
@@ -133,6 +136,9 @@ typolima site/ --lang cs --recursive --include "*.html"
 
 # Exclude files matching pattern
 typolima public/ --lang de --recursive --exclude "_*"
+
+# Create backup before in-place changes
+typolima site/ --lang cs --in-place --backup
 ```
 
 ## Troubleshooting

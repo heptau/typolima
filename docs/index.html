@@ -290,6 +290,7 @@ typolima public/ --lang cs --recursive --in-place</code></pre>
                 <li><code>--aggressive</code> — Convert (c) → ©, +- → ±, etc.</li>
                 <li><code>--include PATTERN</code> — Include files matching glob pattern (can be used multiple times)</li>
                 <li><code>--exclude PATTERN</code> — Exclude files matching glob pattern (can be used multiple times)</li>
+                <li><code>--backup</code> — Create .bak backup before modifying (requires --in-place)</li>
             </ul>
         </section>
 
@@ -323,6 +324,11 @@ typolima public/ --lang de --recursive --exclude "_*"
 
 # Combined: include html but exclude minified
 typolima site/ --lang fr --include "*.html" --exclude "*.min.html"</code></pre>
+
+            <h3>Backup before in-place changes</h3>
+            <pre><code># Create .bak backup files before modifying
+typolima site/ --lang cs --in-place --backup</code></pre>
+            <p>Creates backup files (e.g., <code>index.html.bak</code>) before modifying original files.</p>
         </section>
 
         <div class="cta">
