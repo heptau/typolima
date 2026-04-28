@@ -20,6 +20,11 @@ except ImportError:
 
 from functools import lru_cache
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
+
 
 UNICODE_NBSP = "\u00A0"
 UNICODE_NNBSP = "\u202F"  # narrow NBSP – optional
@@ -353,7 +358,9 @@ def main():
     errors = 0
     html_extensions = [".html", ".htm", ".php", ".hbs", ".liquid", ".latte"]
 
-    for path in paths:
+    iterator = tqdm(paths, desc="Processing", unit="file", disable=not sys.stdout.isatty()) if tqdm and len(paths) > 1 else paths
+
+    for path in iterator:
         try:
             orig = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError) as e:
