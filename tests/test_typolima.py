@@ -341,6 +341,61 @@ class TestTypoLima(unittest.TestCase):
         result = auto_detect_language(Path("readme.md"))
         self.assertIsNone(result)
 
+    def test_load_config_from_file(self):
+        import tempfile
+        from pathlib import Path
+        from typolima import load_config_from_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_file = Path(tmpdir) / ".typolimarc"
+            config_file.write_text("""language: cs
+recursive: true
+exclude:
+  - "_*"
+  - "*.min.*"
+""", encoding="utf-8")
+
+            test_file = Path(tmpdir) / "test.html"
+            test_file.write_text("test", encoding="utf-8")
+
+            config = load_config_from_file(test_file)
+            self.assertEqual(config["language"], "cs")
+            self.assertEqual(config["recursive"], True)
+            self.assertEqual(config["exclude"], ["_*", "*.min.*"])
+
+    def test_load_config_from_parent_directory(self):
+        import tempfile
+        from pathlib import Path
+        from typolima import load_config_from_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            parent = Path(tmpdir) / "subdir"
+            parent.mkdir()
+
+            config_file = Path(tmpdir) / ".typolimarc"
+            config_file.write_text("""language: de
+aggressive: true
+""", encoding="utf-8")
+
+            test_file = parent / "test.html"
+            test_file.write_text("test", encoding="utf-8")
+
+            config = load_config_from_file(test_file)
+            self.assertEqual(config["language"], "de")
+            self.assertEqual(config["aggressive"], True)
+
+    def test_config_file_not_found(self):
+        import tempfile
+        from pathlib import Path
+        from typolima import load_config_from_file
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.html"
+            test_file.write_text("test", encoding="utf-8")
+
+            config = load_config_from_file(test_file)
+            self.assertEqual(config, {})
+
 
 if __name__ == "__main__":
     unittest.main()

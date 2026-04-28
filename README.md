@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/typolima?label=PyPI)](https://pypi.org/project/typolima/)
 [![Python](https://img.shields.io/pypi/pyversions/typolima)](https://pypi.org/project/typolima/)
 [![License](https://img.shields.io/pypi/l/typolima?label=License)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-29%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
+[![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
 [![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
 [![Platform](https://img.shields.io/pypi/implementation/typolima?label=Platform)](https://pypi.org/project/typolima/)
 

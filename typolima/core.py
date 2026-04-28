@@ -132,6 +132,25 @@ def auto_detect_language(path: Path, content: str = None) -> str:
         return lang
 
     return None
+
+
+def load_config_from_file(path: Path) -> Dict[str, Any]:
+    """Load full configuration from .typolimarc file."""
+    search_paths = [path] + list(path.parents)
+
+    for sp in search_paths[:5]:
+        config_file = sp / ".typolimarc"
+        if config_file.is_file():
+            try:
+                with config_file.open(encoding="utf-8") as f:
+                    config = yaml.safe_load(f)
+                if config and isinstance(config, dict):
+                    return config
+            except Exception:
+                pass
+        if (sp / ".git").exists():
+            break
+    return {}
     tqdm = None
 
 
@@ -448,6 +467,33 @@ def main():
     parser.add_argument("--exclude", metavar="PATTERN", action="append", default=[], help="exclude files matching pattern (glob). Can be used multiple times")
 
     args = parser.parse_args()
+
+    # Load config file to fill in defaults
+    config = {}
+    if args.path:
+        config = load_config_from_file(Path(args.path[0]))
+
+    # Override config with CLI arguments (CLI takes precedence)
+    if args.lang is None and config.get("language"):
+        args.lang = config.get("language")
+
+    if not args.recursive and config.get("recursive"):
+        args.recursive = config.get("recursive")
+
+    if not args.include and config.get("include"):
+        args.include = config.get("include")
+
+    if not args.exclude and config.get("exclude"):
+        args.exclude = config.get("exclude")
+
+    if not args.backup and config.get("backup"):
+        args.backup = config.get("backup")
+
+    if not args.aggressive and config.get("aggressive"):
+        args.aggressive = config.get("aggressive")
+
+    if not args.auto_detect and config.get("auto_detect"):
+        args.auto_detect = config.get("auto_detect")
 
     if not args.lang and not args.auto_detect:
         print("Error: either --lang or --auto-detect is required", file=sys.stderr)
