@@ -25,6 +25,60 @@ UNICODE_NBSP = "\u00A0"
 UNICODE_NNBSP = "\u202F"  # narrow NBSP – optional
 
 
+def validate_rules(rules: Dict[str, Any], lang: str) -> None:
+    """
+    Validate YAML rules schema and raise ValueError on invalid config.
+    """
+    if not isinstance(rules, dict):
+        raise ValueError(f"Rules for '{lang}' must be a dictionary")
+
+    if "language" not in rules:
+        raise ValueError(f"Rules for '{lang}' missing required 'language' field")
+    if "locale" not in rules:
+        raise ValueError(f"Rules for '{lang}' missing required 'locale' field")
+
+    q = rules.get("quotes")
+    if q is not None:
+        if not isinstance(q, dict):
+            raise ValueError(f"Rules for '{lang}': 'quotes' must be a dict")
+        primary = q.get("primary")
+        if primary is not None:
+            if not isinstance(primary, list) or len(primary) != 2:
+                raise ValueError(f"Rules for '{lang}': 'quotes.primary' must be [open, close]")
+
+    dashes = rules.get("dashes")
+    if dashes is not None:
+        if not isinstance(dashes, list):
+            raise ValueError(f"Rules for '{lang}': 'dashes' must be a list")
+        for i, d in enumerate(dashes):
+            if not isinstance(d, dict):
+                raise ValueError(f"Rules for '{lang}': dashes[{i}] must be a dict")
+            if "pattern" not in d or "replacement" not in d:
+                raise ValueError(f"Rules for '{lang}': dashes[{i}] missing 'pattern' or 'replacement'")
+
+    nbp = rules.get("non_breaking_prepositions")
+    if nbp is not None and not isinstance(nbp, list):
+        raise ValueError(f"Rules for '{lang}': 'non_breaking_prepositions' must be a list")
+
+    numbers = rules.get("numbers")
+    if numbers is not None and not isinstance(numbers, dict):
+        raise ValueError(f"Rules for '{lang}': 'numbers' must be a dict")
+
+    punc = rules.get("punctuation")
+    if punc is not None and not isinstance(punc, dict):
+        raise ValueError(f"Rules for '{lang}': 'punctuation' must be a dict")
+
+    custom = rules.get("custom_regex")
+    if custom is not None:
+        if not isinstance(custom, list):
+            raise ValueError(f"Rules for '{lang}': 'custom_regex' must be a list")
+        for i, cr in enumerate(custom):
+            if not isinstance(cr, dict):
+                raise ValueError(f"Rules for '{lang}': custom_regex[{i}] must be a dict")
+            if "pattern" not in cr or "replacement" not in cr:
+                raise ValueError(f"Rules for '{lang}': custom_regex[{i}] missing 'pattern' or 'replacement'")
+
+
 @lru_cache(maxsize=1)
 def _load_rules_cached(lang: str, rules_dir_str: str) -> Dict[str, Any]:
     """Cached implementation - rules_dir must be hashable (string)."""
@@ -45,7 +99,9 @@ def load_rules(lang: str, rules_dir: Path = None) -> Dict[str, Any]:
     if rules_dir is None:
         rules_dir = Path(__file__).parent / "rules"
 
-    return _load_rules_cached(lang, str(rules_dir.resolve()))
+    rules = _load_rules_cached(lang, str(rules_dir.resolve()))
+    validate_rules(rules, lang)
+    return rules
 
 
 def fix_text(text: str, rules: Dict[str, Any]) -> str:
@@ -294,22 +350,28 @@ def main():
             paths.append(path)
 
     changed = 0
+    errors = 0
     html_extensions = [".html", ".htm", ".php", ".hbs", ".liquid", ".latte"]
 
     for path in paths:
-        orig = path.read_text(encoding="utf-8")
+        try:
+            orig = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError) as e:
+            print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
+            errors += 1
+            continue
 
-        if path.suffix.lower() in html_extensions:
-            # Use BeautifulSoup for HTML-like files to skip tags/code
-            soup = BeautifulSoup(orig, "lxml")
-            process_soup(soup, rules)
-            # decode() with default formatter="minimal" is usually best,
-            # but we want to ensure NBSP and other symbols are NOT entities.
-            # BS4 4.10+ handles this well by default with str().
-            new = str(soup)
-        else:
-            # Pure text/markdown – fix directly to avoid HTML escaping
-            new = fix_text(orig, rules)
+        try:
+            if path.suffix.lower() in html_extensions:
+                soup = BeautifulSoup(orig, "lxml")
+                process_soup(soup, rules)
+                new = str(soup)
+            else:
+                new = fix_text(orig, rules)
+        except Exception as e:
+            print(f"Warning: failed to process {path}: {e}", file=sys.stderr)
+            errors += 1
+            continue
 
         if new == orig:
             continue
@@ -317,7 +379,6 @@ def main():
         changed += 1
         if args.dry_run:
             if args.diff:
-                # simple text diff
                 print(f"--- {path}")
                 print(f"+++ {path} (would change)")
                 for line in difflib.unified_diff(
@@ -331,8 +392,12 @@ def main():
                 print(f"Would change: {path}")
         else:
             if args.in_place:
-                path.write_text(new, encoding="utf-8")
-                print(f"Fixed: {path}")
+                try:
+                    path.write_text(new, encoding="utf-8")
+                    print(f"Fixed: {path}")
+                except OSError as e:
+                    print(f"Warning: cannot write {path}: {e}", file=sys.stderr)
+                    errors += 1
             else:
                 print(new)
 
@@ -340,6 +405,9 @@ def main():
         print(f"\nWould fix {changed} file(s)")
     else:
         print(f"\nFixed {changed} file(s)")
+
+    if errors > 0:
+        print(f"\n{errors} file(s) skipped due to errors", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -87,5 +87,44 @@ class TestTypoLima(unittest.TestCase):
         self.assertIn("10\u00A0000", result)
         self.assertIn('"No change"', result)  # inside <code>
 
+    def test_validate_rules_valid(self):
+        rules = {"language": "Test", "locale": "ts"}
+        typolima.validate_rules(rules, "ts")
+
+    def test_validate_rules_missing_language(self):
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules({"locale": "ts"}, "ts")
+        self.assertIn("missing required 'language'", str(ctx.exception))
+
+    def test_validate_rules_missing_locale(self):
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules({"language": "Test"}, "ts")
+        self.assertIn("missing required 'locale'", str(ctx.exception))
+
+    def test_validate_rules_invalid_quotes_primary(self):
+        rules = {"language": "Test", "locale": "ts", "quotes": {"primary": "abc"}}
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules(rules, "ts")
+        self.assertIn("quotes.primary", str(ctx.exception))
+
+    def test_validate_rules_invalid_dashes(self):
+        rules = {"language": "Test", "locale": "ts", "dashes": ["not a dict"]}
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules(rules, "ts")
+        self.assertIn("dashes", str(ctx.exception))
+
+    def test_validate_rules_invalid_custom_regex(self):
+        rules = {"language": "Test", "locale": "ts", "custom_regex": "not a list"}
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules(rules, "ts")
+        self.assertIn("custom_regex", str(ctx.exception))
+
+    def test_validate_rules_non_breaking_prepositions_not_list(self):
+        rules = {"language": "Test", "locale": "ts", "non_breaking_prepositions": "a,b"}
+        with self.assertRaises(ValueError) as ctx:
+            typolima.validate_rules(rules, "ts")
+        self.assertIn("non_breaking_prepositions", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
