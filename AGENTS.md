@@ -43,8 +43,8 @@
 - [x] Add more languages (33+ languages supported).
 - [x] Automate builds and releases (Makefile + GoReleaser).
 - [x] Better CLI progress indicators for large projects (tqdm).
+- [x] GitHub Actions CI for automated testing.
 - [ ] Support for LaTeX or Markdown-specific enhanced typography.
-- [ ] GitHub Actions CI for automated testing.
 
 ## Rules for AI Agents
 - **Strictly follow `CONTRIBUTING.md`** for code style, documentation, and mandatory English comments.
