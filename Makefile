@@ -37,6 +37,7 @@ build-bin:
 	@$(PYTHON) -m PyInstaller --onefile --name typolima \
 		--add-data "typolima/rules/*.yaml:typolima/rules" \
 		--add-data "VERSION:." \
+		--runtime-hook pyinstaller_hooks/pyi_rth_disable_mp.py \
 		--hidden-import array \
 		--hidden-import multiprocessing \
 		--hidden-import _multiprocessing \
