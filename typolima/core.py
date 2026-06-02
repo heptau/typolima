@@ -581,7 +581,43 @@ def main():
     html_extensions = [".html", ".htm", ".php", ".hbs", ".liquid", ".latte"]
     stats = {"quotes": 0, "dashes": 0, "nbsp": 0, "apostrophes": 0, "symbols": 0, "spaces": 0}
 
-    iterator = tqdm(paths, desc="Processing", unit="file", disable=not sys.stdout.isatty()) if tqdm and len(paths) > 1 else paths
+    # Show a simple progress indicator for larger batches.
+    # For small file counts the per-file "Fixed: ..." output is
+    # clearer than a flickering bar.
+    show_progress = len(paths) > 5 and sys.stdout.isatty()
+
+    if show_progress:
+        import time as _time
+        _progress_total = len(paths)
+        _progress_start = _time.time()
+
+        def _make_progress_iter():
+            import sys as _sys
+            n = 0
+            for p in paths:
+                n += 1
+                elapsed = _time.time() - _progress_start
+                avg = elapsed / n if n else 0
+                if avg < 0.001:
+                    avg_str = f"{avg * 1_000_000:.0f}us"
+                elif avg < 1:
+                    avg_str = f"{avg * 1000:.1f}ms"
+                else:
+                    avg_str = f"{avg:.2f}s"
+                # \r to overwrite, spaces to clear leftover chars
+                _sys.stderr.write(
+                    f"\rProcessing: {n}/{_progress_total} "
+                    f"[{elapsed:.2f}s, avg {avg_str}/file]   "
+                )
+                _sys.stderr.flush()
+                yield p
+            # Clear the progress line at the end
+            _sys.stderr.write("\r" + " " * 80 + "\r")
+            _sys.stderr.flush()
+
+        iterator = _make_progress_iter()
+    else:
+        iterator = paths
 
     for path in iterator:
         try:
