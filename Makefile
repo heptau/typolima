@@ -41,6 +41,13 @@ build-bin:
 		--hidden-import multiprocessing \
 		--hidden-import _multiprocessing \
 		--hidden-import threading \
+		--hidden-import _hashlib \
+		--hidden-import hashlib \
+		--hidden-import _sha256 \
+		--hidden-import _sha512 \
+		--hidden-import _sha1 \
+		--hidden-import _md5 \
+		--collect-submodules hashlib \
 		typolima/__main__.py
 	@mv dist/typolima $(RELEASE_DIR)/typolima-$(VERSION)-macos
 	@echo "Binary created in $(RELEASE_DIR)/"
