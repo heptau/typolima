@@ -34,7 +34,14 @@ build-bin:
 	@echo "Building standalone binary (v$(VERSION))..."
 	@mkdir -p $(RELEASE_DIR)
 	@$(PYTHON) -m pip install pyinstaller
-	@$(PYTHON) -m PyInstaller --onefile --name typolima --add-data "typolima/rules/*.yaml:typolima/rules" --add-data "VERSION:." typolima/__main__.py
+	@$(PYTHON) -m PyInstaller --onefile --name typolima \
+		--add-data "typolima/rules/*.yaml:typolima/rules" \
+		--add-data "VERSION:." \
+		--hidden-import array \
+		--hidden-import multiprocessing \
+		--hidden-import _multiprocessing \
+		--hidden-import threading \
+		typolima/__main__.py
 	@mv dist/typolima $(RELEASE_DIR)/typolima-$(VERSION)-macos
 	@echo "Binary created in $(RELEASE_DIR)/"
 
