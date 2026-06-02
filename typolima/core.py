@@ -443,6 +443,12 @@ def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
 
 
 def main():
+    # Filter out PyInstaller isolation flags that leak into sys.argv[1:].
+    # PyInstaller --onefile bundles add interpreter flags like -B -S -I -c
+    # to argv, which argparse then mistakes for script arguments.
+    _PY_INTERPRETER_FLAGS = {"-B", "-S", "-I", "-c", "-v", "-q", "-O", "-OO", "-E", "-s", "-t"}
+    sys.argv[1:] = [a for a in sys.argv[1:] if a not in _PY_INTERPRETER_FLAGS]
+
     parser = argparse.ArgumentParser(description="typolima – conservative typographic fixer")
     parser.add_argument("path", nargs="+", help="file or directory")
 

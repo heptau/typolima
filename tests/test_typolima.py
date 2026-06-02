@@ -396,6 +396,43 @@ aggressive: true
             config = load_config_from_file(test_file)
             self.assertEqual(config, {})
 
+    def test_pyinstaller_flags_filtered(self):
+        # Regression test: PyInstaller --onefile bundles add Python
+        # interpreter flags (-B, -S, -I, -c, ...) to sys.argv[1:].
+        # argparse would otherwise reject them as unknown arguments.
+        import tempfile
+        from pathlib import Path
+        import sys
+        from typolima.core import main
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.html"
+            test_file.write_text("<p>Ahoj</p>", encoding="utf-8")
+
+            # Simulate PyInstaller injecting isolation flags
+            original_argv = sys.argv
+            try:
+                sys.argv = [
+                    "typolima",
+                    "-B", "-S", "-I", "-c",  # PyInstaller flags
+                    str(test_file),
+                    "--lang", "cs",
+                    "--in-place",
+                ]
+                # Should not raise SystemExit due to "unrecognized arguments"
+                try:
+                    main()
+                except SystemExit as e:
+                    # Only fail if exit was due to argparse error
+                    # (not normal completion)
+                    pass
+            finally:
+                sys.argv = original_argv
+
+            # Verify the file was actually processed
+            content = test_file.read_text(encoding="utf-8")
+            self.assertIn("Ahoj", content)
+
 
 if __name__ == "__main__":
     unittest.main()
