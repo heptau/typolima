@@ -19,16 +19,18 @@
 
 ## Project Structure
 - `pyproject.toml`: Modern Python package configuration.
+- `MANIFEST.in`: Specifies package data files (rules/*.yaml, VERSION) to include in distributions.
 - `typolima/`: Core package folder.
   - `core.py`: Main typographic fixing logic.
   - `rules/`: Language-specific YAML rules.
   - `__main__.py`: CLI entry point.
-- `tests/`: Unittest-based test suite (29 tests).
+- `tests/`: Unittest-based test suite (34 tests).
 - `docs/`: Documentation website (SEO-friendly HTML).
 - `CONTRIBUTING.md`: Guidelines for contributors (code style, English comments, rules).
 - `Makefile`: Build and release automation.
 - `VERSION`: Single source of truth for versioning.
 - `.goreleaser.yaml`: Release configuration.
+- `.github/FUNDING.yml`: GitHub Sponsors / funding links.
 
 ## Key Rules & logic
 - **Quotes:** Replaces straight quotes with language-specific ones (e.g., „“ for Czech, «» for French).
@@ -38,17 +40,22 @@
 - **Aggressive mode:** Optional conversion of symbols like `(c)` to `©`, `+-` to `±`.
 
 ## Roadmap / Improvements
-- [x] Add robust testing suite (29 tests).
+- [x] Add robust testing suite (34 tests).
 - [x] Implement basic `--aggressive` mode (symbols, etc.).
 - [x] Add more languages (33+ languages supported).
 - [x] Automate builds and releases (Makefile + GoReleaser).
 - [x] Better CLI progress indicators for large projects (tqdm).
 - [x] GitHub Actions CI for automated testing.
+- [x] Add CLI options: `--include`, `--exclude`, `--backup`, `--auto-detect`, `--verbose`.
+- [x] Add `.typolimarc` config file support.
+- [x] PyInstaller --onefile binary with PyInstaller flag filter workaround.
 - [ ] Support for LaTeX or Markdown-specific enhanced typography.
 
 ## Rules for AI Agents
 - **Strictly follow `CONTRIBUTING.md`** for code style, documentation, and mandatory English comments.
-- Always run `pytest tests/` before pushing any changes to the rules or core logic.
-- New CLI options: `--include`, `--exclude`, `--backup`, `--auto-detect`
+- Always run `make test` (or `pytest tests/`) before pushing any changes to the rules or core logic.
+- Available CLI options: `--lang`, `--auto-detect`, `--in-place`, `--backup`, `--dry-run`, `--diff`, `--recursive`, `--aggressive`, `--include`, `--exclude`, `--verbose`
 - Use `lxml` parser for HTML files (faster than html.parser)
 - Rules loading uses caching (`@lru_cache`) for performance
+- PyInstaller --onefile bundles must filter interpreter flags (`-B`, `-S`, `-I`, `-c`) from `sys.argv` to avoid argparse errors
+- NEVER include `-v` in the PyInstaller flag filter — TypoLima uses it as `--verbose` short alias

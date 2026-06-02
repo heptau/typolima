@@ -26,6 +26,8 @@ TypoLima supports these CLI options:
 - `--aggressive` - Convert (c) → ©, +- → ±, etc.
 - `--include PATTERN` - Include files matching glob pattern
 - `--exclude PATTERN` - Exclude files matching glob pattern
+- `--verbose` / `-v` - Show detailed statistics about changes
+- `.typolimarc` - YAML config file in project root for default settings
 
 ## Development Workflow
 

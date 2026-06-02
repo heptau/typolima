@@ -1,7 +1,7 @@
 # TypoLima – Simple typographic fixer for HTML / text files
 
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-32%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
+[![Tests](https://img.shields.io/badge/Tests-34%20passed-brightgreen)](https://github.com/heptau/typolima/actions)
 [![CI](https://github.com/heptau/typolima/actions/workflows/test.yml/badge.svg)](https://github.com/heptau/typolima/actions)
 [![Release](https://img.shields.io/github/v/tag/heptau/typolima?label=Release)](https://github.com/heptau/typolima/releases)
 
