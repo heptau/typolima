@@ -452,7 +452,9 @@ def main():
     sys.argv[1:] = [a for a in sys.argv[1:] if a not in _PY_INTERPRETER_FLAGS]
 
     parser = argparse.ArgumentParser(description="typolima – conservative typographic fixer")
-    parser.add_argument("path", nargs="+", help="file or directory")
+    # nargs="*" allows us to handle PyInstaller subprocess invocations
+    # silently (they typically have no path argument).
+    parser.add_argument("path", nargs="*", help="file or directory")
 
     # Try to find VERSION file or use package metadata
     version = "unknown"
@@ -511,6 +513,14 @@ def main():
         args.auto_detect = config.get("auto_detect")
 
     if not args.lang and not args.auto_detect:
+        # Distinguish between a real user error and a spurious
+        # invocation from a PyInstaller subprocess (bootloader
+        # re-execution or multiprocessing child). Subprocesses
+        # typically have no path argument.
+        if not args.path:
+            # Likely a subprocess - exit silently so it does not
+            # pollute the user's build output.
+            sys.exit(0)
         print("Error: either --lang or --auto-detect is required", file=sys.stderr)
         sys.exit(2)
 
