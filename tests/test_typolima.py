@@ -433,6 +433,37 @@ aggressive: true
             content = test_file.read_text(encoding="utf-8")
             self.assertIn("Ahoj", content)
 
+    def test_verbose_short_flag_not_filtered(self):
+        # Regression test: -v is TypoLima's --verbose short alias
+        # and must NOT be filtered out as a Python interpreter flag.
+        import tempfile
+        from pathlib import Path
+        import sys
+        from typolima.core import main
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.html"
+            test_file.write_text("<p>Hello</p>", encoding="utf-8")
+
+            original_argv = sys.argv
+            try:
+                sys.argv = [
+                    "typolima",
+                    str(test_file),
+                    "--lang", "en",
+                    "--in-place",
+                    "-v",  # Must NOT be filtered out
+                ]
+                try:
+                    main()
+                except SystemExit:
+                    pass
+            finally:
+                sys.argv = original_argv
+
+            # -v should still be in sys.argv (not filtered)
+            self.assertIn("-v", sys.argv)
+
 
 if __name__ == "__main__":
     unittest.main()
