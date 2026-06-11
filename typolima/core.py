@@ -420,6 +420,60 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
     return text
 
 
+def _protect_frontmatter(content: str) -> tuple:
+    """
+    Extract and protect YAML frontmatter (---...---) at the start of a file.
+    Returns (body, frontmatter_block) where frontmatter_block is None if not found.
+    """
+    if not content.startswith("---"):
+        return content, None
+    end = content.find("---", 3)
+    if end == -1:
+        return content, None
+    frontmatter = content[:end + 3]
+    body = content[end + 3:]
+    # If body starts with a newline, consume it to avoid leading blank line
+    if body.startswith("\n"):
+        body = body[1:]
+    return body, frontmatter
+
+
+def _protect_code_blocks(content: str) -> tuple:
+    """
+    Replace fenced code blocks (```...```) with unique placeholders.
+    Returns (content_with_placeholders, list_of_blocks).
+    """
+    blocks = []
+    def _replacer(match):
+        placeholder = f"\x00CODEBLOCK{len(blocks)}\x00"
+        blocks.append(match.group(0))
+        return placeholder
+    result = re.sub(r"```.*?```", _replacer, content, flags=re.DOTALL)
+    return result, blocks
+
+
+def _restore_code_blocks(content: str, blocks: list) -> str:
+    """Restore code block placeholders with original blocks."""
+    for i, block in enumerate(blocks):
+        content = content.replace(f"\x00CODEBLOCK{i}\x00", block)
+    return content
+
+
+def fix_markdown(content: str, rules: Dict[str, Any]) -> str:
+    """
+    Apply typographic rules to Markdown content while protecting:
+    - YAML frontmatter (---...---)
+    - Fenced code blocks (```...```)
+    """
+    body, frontmatter = _protect_frontmatter(content)
+    body, code_blocks = _protect_code_blocks(body)
+    body = fix_text(body, rules)
+    body = _restore_code_blocks(body, code_blocks)
+    if frontmatter:
+        return frontmatter + "\n" + body
+    return body
+
+
 def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
     """
     Recursively process a BeautifulSoup object, skipping code and script tags.
@@ -650,6 +704,8 @@ def main():
                 soup = BeautifulSoup(orig, "lxml")
                 process_soup(soup, rules)
                 new = str(soup)
+            elif path.suffix.lower() == ".md":
+                new = fix_markdown(orig, rules)
             else:
                 new = fix_text(orig, rules)
         except Exception as e:
