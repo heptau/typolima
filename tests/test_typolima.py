@@ -433,6 +433,51 @@ aggressive: true
             content = test_file.read_text(encoding="utf-8")
             self.assertIn("Ahoj", content)
 
+    def test_fix_markdown_protects_frontmatter(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = "---\ntitle: \"Skryté úspory\"\nlocale: \"cs\"\n---\n\n\"Ahoj světe\""
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn("title: \"Skryté úspory\"", result)
+        self.assertNotIn("title: „Skryté úspory“", result)
+        self.assertIn("„Ahoj světe“", result)
+
+    def test_fix_markdown_protects_code_blocks(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = "Text \"s uvozovkami\"\n\n```javascript\nconst x = \"low\";\n```\n\n\"Další\""
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn("const x = \"low\"", result)
+        self.assertNotIn("„low“", result)
+        self.assertIn("„Další“", result)
+
+    def test_fix_markdown_no_frontmatter(self):
+        rules = typolima.load_rules("en", self.rules_dir)
+        md = "\"Hello\" world\n10000"
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn("“Hello”", result)
+        self.assertIn("10,000", result)
+
+    def test_fix_markdown_frontmatter_only(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = "---\ntitle: \"Keep\"\n---\n"
+        result = typolima.fix_markdown(md, rules)
+        self.assertEqual(result, md)
+
+    def test_fix_markdown_multiple_code_blocks(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = "```\nconst a = \"x\";\n```\nmezi\n```\nconst b = \"y\";\n```"
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn("const a = \"x\"", result)
+        self.assertIn("const b = \"y\"", result)
+        self.assertIn("mezi", result)
+
+    def test_fix_markdown_frontmatter_and_code_blocks(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = "---\ntitle: \"Test\"\n---\n\n\"Text\"\n\n```\nkód\n```"
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn("title: \"Test\"", result)
+        self.assertIn("„Text“", result)
+        self.assertIn("kód", result)
+
     def test_verbose_short_flag_not_filtered(self):
         # Regression test: -v is TypoLima's --verbose short alias
         # and must NOT be filtered out as a Python interpreter flag.
