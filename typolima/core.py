@@ -312,17 +312,21 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
     before = [str(c) for c in punc.get("space_before", []) if c]
     after = [str(c) for c in punc.get("space_after", []) if c]
 
+    # Inline whitespace only (space/tab/NBSP) - deliberately excludes \n so a
+    # paragraph or list-item break never gets glued to the next line.
+    _INLINE_WS = rf"[ \t{UNICODE_NBSP}]"
+
     if before:
         # Filter to ensure we only try to escape strings (to avoid TypeError with bools etc)
         before_strs = [re.escape(str(c)) for c in before if c and isinstance(c, (str, int, float))]
         if before_strs:
-            pat_before = r"(\S)\s*(" + "|".join(before_strs) + r")"
+            pat_before = r"(\S)" + _INLINE_WS + r"*(" + "|".join(before_strs) + r")"
             text = re.sub(pat_before, rf"\1{UNICODE_NBSP}\2", text)
 
     if after:
         after_strs = [re.escape(str(c)) for c in after if c and isinstance(c, (str, int, float))]
         if after_strs:
-            pat_after = r"(" + "|".join(after_strs) + r")\s*(\S)"
+            pat_after = r"(" + "|".join(after_strs) + r")" + _INLINE_WS + r"*(\S)"
             text = re.sub(pat_after, rf"\1{UNICODE_NBSP}\2", text)
 
     # ──────────────────────────────────────
@@ -334,15 +338,18 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
         for dr in dash_rules:
             pat = dr.get("pattern")
             if not pat: continue
-            # Enhance pattern to handle NBSP if it was already inserted by prepositions
-            pat = pat.replace(" ", rf"[\s{UNICODE_NBSP}]")
+            # Enhance pattern to handle NBSP if it was already inserted by prepositions.
+            # Deliberately NOT \s: that also matches newlines, which would let this
+            # eat the line break before a Markdown list item ("\n- foo") and merge
+            # it into the previous line.
+            pat = pat.replace(" ", _INLINE_WS)
             rep = dr.get("replacement")
             if rep is not None:
                 rep = rep.replace("[NBSP]", UNICODE_NBSP).replace("[NNBSP]", UNICODE_NNBSP)
                 text = re.sub(pat, rep, text)
     else:
         # Default fallback (conservative)
-        text = re.sub(rf" [\s{UNICODE_NBSP}]*-?[\s{UNICODE_NBSP}]* ", rf"{UNICODE_NBSP}– ", text)
+        text = re.sub(rf" {_INLINE_WS}*-?{_INLINE_WS}* ", rf"{UNICODE_NBSP}– ", text)
         text = re.sub(r"\.{3,}", "…", text)
 
     # ──────────────────────────────────────
@@ -459,15 +466,37 @@ def _restore_code_blocks(content: str, blocks: list) -> str:
     return content
 
 
+# A leading "- " list marker, indented or not. fix_text()'s dash rule turns a
+# lone hyphen between two spaces into an en-dash (for parenthetical thoughts),
+# which is correct for prose but would also fire on a nested list item like
+# "  - text" (the indent before the marker counts as the "space before"),
+# rewriting the marker itself into "  – text" and breaking the list.
+_LIST_MARKER_RE = re.compile(r"^([ \t]*)-(?=[ \t])", re.MULTILINE)
+_LIST_MARKER_PLACEHOLDER = "\x00LISTMARKER\x00"
+
+
+def _protect_list_markers(content: str) -> str:
+    """Replace leading '-' list markers with a placeholder immune to dash rules."""
+    return _LIST_MARKER_RE.sub(rf"\1{_LIST_MARKER_PLACEHOLDER}", content)
+
+
+def _restore_list_markers(content: str) -> str:
+    """Restore list marker placeholders back to '-'."""
+    return content.replace(_LIST_MARKER_PLACEHOLDER, "-")
+
+
 def fix_markdown(content: str, rules: Dict[str, Any]) -> str:
     """
     Apply typographic rules to Markdown content while protecting:
     - YAML frontmatter (---...---)
     - Fenced code blocks (```...```)
+    - Leading '-' list markers (incl. nested/indented ones)
     """
     body, frontmatter = _protect_frontmatter(content)
     body, code_blocks = _protect_code_blocks(body)
+    body = _protect_list_markers(body)
     body = fix_text(body, rules)
+    body = _restore_list_markers(body)
     body = _restore_code_blocks(body, code_blocks)
     if frontmatter:
         return frontmatter + "\n" + body

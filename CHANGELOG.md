@@ -11,6 +11,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - `test_verbose_short_flag_not_filtered` asserted against `sys.argv` after the test's `finally` block had already restored it to the original value, so the assertion checked stale data and could never actually catch a regression in the `-v`/interpreter-flag filtering logic. Now asserts against the injected argv list itself.
 - Add `permissions: contents: read` to GitHub Actions workflow to satisfy CodeQL `actions/missing-workflow-permissions` alerts.
+- Markdown processing could merge list items (and the paragraph above them) into a single line. The dash rule's NBSP-aware pattern enhancement rewrote a literal space to `[\s ]`, and `\s` also matches newlines, so it could match the line break right before a `- ` list marker and swallow it. Now restricted to an inline-whitespace class (space/tab/NBSP) that never crosses a line break; same fix applied to the French-style punctuation spacing rules, which had the same issue.
+- Nested/indented `- ` list markers (e.g. `  - text`) got their dash rewritten to an en-dash by the same dash rule, since the indentation in front of the marker counted as its "space before" - turning a valid nested bullet into invalid Markdown. `fix_markdown()` now protects leading list markers with a placeholder before running typographic rules, the same way it already protects frontmatter and code blocks.
 
 ## [1.2.7] - 2026-06-11
 

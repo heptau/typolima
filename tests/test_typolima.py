@@ -528,6 +528,43 @@ aggressive: true
         self.assertIn("„Text“", result)
         self.assertIn("kód", result)
 
+    def test_fix_markdown_preserves_list_items(self):
+        # Regression test: the dash rule's NBSP-aware pattern enhancement used
+        # to rewrite " " to "[\s ]", and \s also matches newlines. That
+        # let it match the line break before a "- " list marker and swallow
+        # it, merging every list item (and the paragraph above it) into one
+        # line - destroying the Markdown list structure.
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = (
+            'Pro kontext:\n\n'
+            '- "První" položka.\n'
+            '- Druhá položka.\n'
+            '- Třetí položka.\n'
+        )
+        result = typolima.fix_markdown(md, rules)
+        lines = result.splitlines()
+        self.assertIn('- „První“ položka.', lines)
+        self.assertIn('- Druhá položka.', lines)
+        self.assertIn('- Třetí položka.', lines)
+        # Exactly one line per list item - none of them got glued together.
+        self.assertEqual(len(lines), len(md.splitlines()))
+
+    def test_fix_markdown_preserves_nested_list_marker(self):
+        # Regression test: even with the line-break fixed above, the dash
+        # rule still treated a nested item's indent as the "space before"
+        # and rewrote the marker itself, e.g. "  - text" -> "  – text" -
+        # not a valid Markdown bullet, so the nested item fell out of the list.
+        rules = typolima.load_rules("cs", self.rules_dir)
+        md = (
+            'Text:\n\n'
+            '- Horní položka.\n'
+            '  - Vnořená "položka".\n'
+        )
+        result = typolima.fix_markdown(md, rules)
+        self.assertIn('- Horní položka.', result)
+        self.assertIn('- Vnořená „položka“.', result)
+        self.assertNotIn('–', result)
+
     def test_verbose_short_flag_not_filtered(self):
         # Regression test: -v is TypoLima's --verbose short alias
         # and must NOT be filtered out as a Python interpreter flag.
