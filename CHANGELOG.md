@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-27
+
 ### Added
 - `--preserve-format` CLI flag (and matching `preserve_format` `.typolimarc` option) for HTML files. Processes text content only via a lightweight tag/comment/doctype tokenizer instead of round-tripping through BeautifulSoup/lxml, so attribute order, void-element self-closing style, and whitespace/indentation stay byte-for-byte identical outside of the actual typographic changes. Without this flag, `str(BeautifulSoup(...))` re-serializes the whole document as a side effect, burying real typographic fixes in a huge unrelated reformatting diff.
 

@@ -10,8 +10,8 @@ help:
 	@echo "Targets:"
 	@echo "  build-pip        Build Python wheel distribution"
 	@echo "  build-bin        Build standalone binary (using PyInstaller)"
-	@echo "  prepare-release  Update CHANGELOG and prepare release notes"
-	@echo "  release          Full release using GoReleaser (requires tag)"
+	@echo "  prepare-release  Bump VERSION, update CHANGELOG, prepare release notes"
+	@echo "  release          Full release using GoReleaser (usage: make release VERSION=X.Y.Z)"
 	@echo "  snapshot         Local release test using GoReleaser"
 	@echo "  test             Run all tests"
 	@echo "  clean            Remove build artifacts"
@@ -62,6 +62,15 @@ snapshot: clean
 .PHONY: prepare-release
 prepare-release:
 	@echo "Preparing release v$(VERSION)..."
+	@if grep -q "^## \[$(VERSION)\]" CHANGELOG.md; then \
+		echo "Error: CHANGELOG.md already has an entry for [$(VERSION)]. Did you already release this version, or forget to bump VERSION?"; \
+		exit 1; \
+	fi
+	@if ! awk '/^## \[Unreleased\]/{f=1; next} /^## \[/{if(f) exit} f{if ($$0 !~ /^[[:space:]]*$$/) found=1} END{exit !found}' CHANGELOG.md; then \
+		echo "Error: CHANGELOG.md's [Unreleased] section is empty (or missing). Nothing to release - add changelog entries first."; \
+		exit 1; \
+	fi
+	@echo "$(VERSION)" > VERSION
 	@DATE=$$(date +%Y-%m-%d); \
 	awk -v ver="$(VERSION)" -v date="$$DATE" '{ \
 		if ($$0 ~ /^## \[Unreleased\]/) { \
@@ -73,7 +82,7 @@ prepare-release:
 		} \
 	}' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 	@awk '/^## \[$(VERSION)\]/{found=1; next} /^## \[/{if(found) exit} found{print}' CHANGELOG.md > release-notes.md
-	@git add CHANGELOG.md
+	@git add VERSION CHANGELOG.md
 	@git commit -m "Release v$(VERSION)"
 	@git push origin HEAD
 

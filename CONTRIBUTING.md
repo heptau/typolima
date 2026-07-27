@@ -74,3 +74,26 @@ Make sure all tests pass before submitting a PR.
 ## Versioning
 
 We use a single `VERSION` file in the root of the repository to manage the project version. The `Makefile` and `pyproject.toml` use this file as the single source of truth.
+
+## Releasing
+
+Releases are cut with a single command:
+
+```bash
+make release VERSION=X.Y.Z
+```
+
+Before running it, make sure `CHANGELOG.md` has real content under `## [Unreleased]` — the command refuses to run if that section is empty, or if `X.Y.Z` already has an entry in the changelog (both would otherwise produce an empty or duplicate GitHub Release).
+
+What it does, in order:
+1.  `prepare-release`: writes `X.Y.Z` into `VERSION`, renames `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - <today>`, adds a fresh empty `## [Unreleased]` above it for the next cycle, extracts that version's notes into `release-notes.md`, and commits + pushes all of it as a single `Release vX.Y.Z` commit.
+2.  Creates and pushes the git tag `vX.Y.Z`.
+3.  Runs `goreleaser release --clean --release-notes=release-notes.md`, which builds the macOS binaries (PyInstaller, arm64 + amd64), publishes the GitHub Release using `release-notes.md` as the release body, and updates the formula in `heptau/homebrew-tap`.
+
+### Prerequisites
+
+- `goreleaser` installed locally (`brew install goreleaser`).
+- `GITHUB_TOKEN` exported in your shell, with permission to push tags/releases to this repo and to `heptau/homebrew-tap`.
+- A clean working tree on `main`, up to date with `origin/main`.
+
+To dry-run the GoReleaser part only (build + package, no publishing, no tag) use `make snapshot`.
