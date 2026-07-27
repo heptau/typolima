@@ -87,6 +87,56 @@ class TestTypoLima(unittest.TestCase):
         self.assertIn("10\u00A0000", result)
         self.assertIn('"No change"', result)  # inside <code>
 
+    def test_process_html_preserve_format_fixes_text_only(self):
+        rules = typolima.load_rules("cs", self.rules_dir)
+        html = (
+            '<head>\n'
+            '\t<meta charset="UTF-8">\n'
+            '\t<meta name="viewport" content="width=device-width">\n'
+            '</head>\n'
+            '<p>"Ahoj" 10000.</p><code>"No change"</code>\n'
+        )
+        result = typolima.process_html_preserve_format(html, rules)
+        # Typographic fix applied to real text content.
+        self.assertIn("„Ahoj“", result)
+        self.assertIn("10 000", result)
+        # Text inside a skip tag stays untouched.
+        self.assertIn('"No change"', result)
+        # Markup itself is untouched byte-for-byte: original attribute order,
+        # HTML5 void-element style (no added self-closing slash), indentation.
+        self.assertIn('<meta charset="UTF-8">', result)
+        self.assertIn('<meta name="viewport" content="width=device-width">', result)
+        self.assertIn('<head>\n\t<meta', result)
+
+    def test_process_html_preserve_format_preserves_attribute_order(self):
+        # Same underlying fix_text() output, just delivered without reformatting.
+        rules = typolima.load_rules("cs", self.rules_dir)
+        html = '<div class="a"   data-x="1"><p>"Ahoj" 10000.</p></div>'
+        result = typolima.process_html_preserve_format(html, rules)
+        self.assertIn("„Ahoj“", result)
+        self.assertIn("10 000", result)
+        # Original attribute spacing/order preserved verbatim.
+        self.assertIn('<div class="a"   data-x="1">', result)
+
+    def test_preserve_format_cli_flag(self):
+        import subprocess
+        import sys
+        import tempfile
+
+        html = '<head>\n\t<meta charset="UTF-8">\n</head>\n<p>"Ahoj" 10000.</p>\n'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "page.html"
+            path.write_text(html, encoding="utf-8")
+            subprocess.run(
+                [sys.executable, "-m", "typolima", str(path), "--lang", "cs", "--in-place", "--preserve-format"],
+                check=True,
+                cwd=Path(__file__).parent.parent,
+            )
+            result = path.read_text(encoding="utf-8")
+        self.assertIn("„Ahoj“", result)
+        self.assertIn('<meta charset="UTF-8">', result)
+        self.assertIn("<head>\n\t<meta", result)
+
     def test_validate_rules_valid(self):
         rules = {"language": "Test", "locale": "ts"}
         typolima.validate_rules(rules, "ts")
@@ -490,15 +540,16 @@ aggressive: true
             test_file = Path(tmpdir) / "test.html"
             test_file.write_text("<p>Hello</p>", encoding="utf-8")
 
+            injected_argv = [
+                "typolima",
+                str(test_file),
+                "--lang", "en",
+                "--in-place",
+                "-v",  # Must NOT be filtered out
+            ]
             original_argv = sys.argv
             try:
-                sys.argv = [
-                    "typolima",
-                    str(test_file),
-                    "--lang", "en",
-                    "--in-place",
-                    "-v",  # Must NOT be filtered out
-                ]
+                sys.argv = injected_argv
                 try:
                     main()
                 except SystemExit:
@@ -506,8 +557,11 @@ aggressive: true
             finally:
                 sys.argv = original_argv
 
-            # -v should still be in sys.argv (not filtered)
-            self.assertIn("-v", sys.argv)
+            # -v should still be in the argv list we injected (not filtered).
+            # main() filters via `sys.argv[1:] = [...]`, a slice assignment
+            # that mutates the injected list object in place, so this holds
+            # even though `sys.argv` itself has since been restored above.
+            self.assertIn("-v", injected_argv)
 
 
 if __name__ == "__main__":

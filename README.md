@@ -89,6 +89,11 @@ typolima site/ --recursive --auto-detect
 
 # Show detailed statistics about changes (quotes, dashes, NBSP count)
 typolima site/ --lang cs --verbose
+
+# HTML only: edit text content without re-serializing the document, so
+# attribute order, self-closing style, and whitespace stay byte-for-byte
+# identical outside of the actual typographic changes
+typolima site/ --lang cs --recursive --in-place --preserve-format
 ```
 
 ## Hugo integration example (package.json)
@@ -106,6 +111,9 @@ typolima site/ --lang cs --verbose
 - NBSP after prepositions only when very clear context
 - Skips anything inside <code>, <pre>, <script>, {{ … }}, <?php … ?>
 - `--dry-run --diff` always shows colorful diff first
+- `--preserve-format` skips BeautifulSoup's HTML re-serialization (which
+  otherwise reflows the whole document as a side effect) so only real
+  typographic text changes show up in the diff
 
 ## Configuration
 

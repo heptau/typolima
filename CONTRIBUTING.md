@@ -24,6 +24,7 @@ TypoLima supports these CLI options:
 - `--diff` - Show detailed diff
 - `--recursive` / `-r` - Process directories recursively
 - `--aggressive` - Convert (c) → ©, +- → ±, etc.
+- `--preserve-format` - HTML only: edit text content without re-serializing via BeautifulSoup, keeping attribute order/self-closing style/whitespace byte-for-byte
 - `--include PATTERN` - Include files matching glob pattern
 - `--exclude PATTERN` - Exclude files matching glob pattern
 - `--verbose` / `-v` - Show detailed statistics about changes

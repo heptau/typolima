@@ -474,17 +474,18 @@ def fix_markdown(content: str, rules: Dict[str, Any]) -> str:
     return body
 
 
+SKIP_TAGS = {"script", "style", "code", "pre", "samp", "var", "kbd", "tt"}
+
+
 def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
     """
     Recursively process a BeautifulSoup object, skipping code and script tags.
     """
-    skip_tags = {"script", "style", "code", "pre", "samp", "var", "kbd", "tt"}
-
     def recurse(node):
         if isinstance(node, (Comment, Doctype)):
             return
         if isinstance(node, NavigableString):
-            if node.parent and node.parent.name in skip_tags:
+            if node.parent and node.parent.name in SKIP_TAGS:
                 return
             new = fix_text(str(node), rules)
             if new != str(node):
@@ -494,6 +495,56 @@ def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
                 recurse(child)
 
     recurse(soup)
+
+
+# Matches one markup token: an HTML comment, a doctype declaration, or a
+# single tag. Used to tokenize HTML without a full parser so that
+# --preserve-format can leave every byte of markup untouched.
+_MARKUP_TOKEN_RE = re.compile(r"(<!--.*?-->|<!DOCTYPE[^>]*>|<[^>]*>)", re.DOTALL | re.IGNORECASE)
+_TAG_NAME_RE = re.compile(r"^<\s*(/?)\s*([a-zA-Z][a-zA-Z0-9:-]*)")
+
+
+def process_html_preserve_format(content: str, rules: Dict[str, Any]) -> str:
+    """
+    Apply typographic fixes to HTML text nodes without re-parsing and
+    re-serializing the document through BeautifulSoup/lxml.
+
+    str(BeautifulSoup(...)) normalizes the whole document as a side effect
+    (sorts/reflows attributes, rewrites void elements as self-closing,
+    collapses inter-tag whitespace, ...), which produces a huge diff
+    unrelated to typography. This tokenizes the raw string on tag/comment/
+    doctype boundaries instead: every markup token is copied through
+    byte-for-byte, and fix_text() only ever runs on the text between them
+    (skipping text inside SKIP_TAGS, same as process_soup).
+
+    Trade-off: this is a regex tokenizer, not a real HTML parser, so it
+    assumes well-formed markup (no unescaped '>' inside attribute values).
+    That's an acceptable trade for a mode whose whole purpose is to
+    guarantee zero incidental reformatting.
+    """
+    tokens = _MARKUP_TOKEN_RE.split(content)
+    skip_stack = []
+    out = []
+
+    for i, token in enumerate(tokens):
+        if i % 2 == 1:
+            # Markup token (tag/comment/doctype) - always passed through unchanged.
+            out.append(token)
+            if not token.startswith("<!"):
+                m = _TAG_NAME_RE.match(token)
+                if m:
+                    is_closing = bool(m.group(1))
+                    name = m.group(2).lower()
+                    if name in SKIP_TAGS:
+                        if is_closing:
+                            if skip_stack and skip_stack[-1] == name:
+                                skip_stack.pop()
+                        elif not token.rstrip().endswith("/>"):
+                            skip_stack.append(name)
+        else:
+            out.append(token if skip_stack else fix_text(token, rules))
+
+    return "".join(out)
 
 
 def main():
@@ -533,6 +584,7 @@ def main():
     parser.add_argument("--diff", action="store_true", help="show diff (requires --dry-run)")
     parser.add_argument("--recursive", "-r", action="store_true", help="process directories recursively")
     parser.add_argument("--aggressive", action="store_true", help="convert (c) to ©, +- to ±, etc.")
+    parser.add_argument("--preserve-format", action="store_true", help="for HTML: edit text content only, without re-serializing the document through BeautifulSoup (keeps original attribute order, self-closing style, and whitespace byte-for-byte)")
     parser.add_argument("--include", metavar="PATTERN", action="append", default=[], help="include files matching pattern (glob). Can be used multiple times")
     parser.add_argument("--exclude", metavar="PATTERN", action="append", default=[], help="exclude files matching pattern (glob). Can be used multiple times")
     parser.add_argument("--verbose", "-v", action="store_true", help="show detailed statistics about changes")
@@ -562,6 +614,9 @@ def main():
 
     if not args.aggressive and config.get("aggressive"):
         args.aggressive = config.get("aggressive")
+
+    if not args.preserve_format and config.get("preserve_format"):
+        args.preserve_format = config.get("preserve_format")
 
     if not args.auto_detect and config.get("auto_detect"):
         args.auto_detect = config.get("auto_detect")
@@ -701,9 +756,12 @@ def main():
 
         try:
             if path.suffix.lower() in html_extensions:
-                soup = BeautifulSoup(orig, "lxml")
-                process_soup(soup, rules)
-                new = str(soup)
+                if args.preserve_format:
+                    new = process_html_preserve_format(orig, rules)
+                else:
+                    soup = BeautifulSoup(orig, "lxml")
+                    process_soup(soup, rules)
+                    new = str(soup)
             elif path.suffix.lower() == ".md":
                 new = fix_markdown(orig, rules)
             else:

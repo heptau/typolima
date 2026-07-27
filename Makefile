@@ -8,13 +8,14 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  build-pip      Build Python wheel distribution"
-	@echo "  build-bin      Build standalone binary (using PyInstaller)"
-	@echo "  release        Full release using GoReleaser (requires tag)"
-	@echo "  snapshot       Local release test using GoReleaser"
-	@echo "  test           Run all tests"
-	@echo "  clean          Remove build artifacts"
-	@echo "  help           Show this help message"
+	@echo "  build-pip        Build Python wheel distribution"
+	@echo "  build-bin        Build standalone binary (using PyInstaller)"
+	@echo "  prepare-release  Update CHANGELOG and prepare release notes"
+	@echo "  release          Full release using GoReleaser (requires tag)"
+	@echo "  snapshot         Local release test using GoReleaser"
+	@echo "  test             Run all tests"
+	@echo "  clean            Remove build artifacts"
+	@echo "  help             Show this help message"
 
 VENV = venv
 PYTHON = $(VENV)/bin/python3
@@ -58,8 +59,26 @@ snapshot: clean
 	@echo "Creating snapshot release with GoReleaser..."
 	@goreleaser release --snapshot --clean
 
+.PHONY: prepare-release
+prepare-release:
+	@echo "Preparing release v$(VERSION)..."
+	@DATE=$$(date +%Y-%m-%d); \
+	awk -v ver="$(VERSION)" -v date="$$DATE" '{ \
+		if ($$0 ~ /^## \[Unreleased\]/) { \
+			print "## [Unreleased]"; \
+			print ""; \
+			print "## [" ver "] - " date; \
+		} else { \
+			print; \
+		} \
+	}' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+	@awk '/^## \[$(VERSION)\]/{found=1; next} /^## \[/{if(found) exit} found{print}' CHANGELOG.md > release-notes.md
+	@git add CHANGELOG.md
+	@git commit -m "Release v$(VERSION)"
+	@git push origin HEAD
+
 .PHONY: release
-release: clean
+release: clean prepare-release
 	@echo "Syncing with version $(VERSION)..."
 	@if [ -z "$$(git tag -l v$(VERSION))" ]; then \
 		echo "Creating new tag v$(VERSION)..."; \
@@ -69,7 +88,7 @@ release: clean
 		echo "Tag v$(VERSION) already exists."; \
 	fi
 	@echo "Starting full release with GoReleaser..."
-	@goreleaser release --clean
+	@goreleaser release --clean --release-notes=release-notes.md
 
 .PHONY: clean
 clean:

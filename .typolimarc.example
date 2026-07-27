@@ -26,3 +26,8 @@ exclude:
 
 # Enable aggressive mode (convert (c) to ©, etc.)
 # aggressive: true
+
+# HTML only: edit text content without re-serializing the document through
+# BeautifulSoup, so attribute order/self-closing style/whitespace stay
+# byte-for-byte identical outside of the actual typographic changes
+# preserve_format: true
