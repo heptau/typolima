@@ -5,6 +5,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Documentation site (`docs/index.html`) redesigned: Source Serif 4 / Inter / JetBrains Mono fonts, light and dark theme, before/after demo, quote specimen section, filterable language table, copy buttons, and new feature descriptions (`--preserve-format`, Markdown protection, numbers and prices).
+
+### Fixed
+- The "Supported Languages" table on the docs site listed wrong quotes for several languages (English shown as straight `" "`, Polish and Hungarian as `„ “`) and covered only 14 of 34 rule files. It is now generated from `typolima/rules/*.yaml` by `scripts/gen_docs_languages.py`.
+
 ## [1.3.2] - 2026-10-29
 
 ### Fixed
