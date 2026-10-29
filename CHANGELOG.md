@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-29
+
 ### Fixed
 - The `darwin-amd64` release archive contained an arm64 binary: `make build-bin` ran PyInstaller once with the build host's architecture, and GoReleaser packed that single file into both archives. Intel Macs therefore got an unexecutable binary from Homebrew or a manual download (`bad CPU type in executable`). The standalone binary is now a universal2 Mach-O (x86_64 + arm64), so both archives carry a file that runs natively on either Mac.
 - `make build-bin` no longer borrows the dev virtualenv for PyInstaller. It creates `build-venv` from a universal2 CPython (`BUILD_PYTHON`, by default the python.org install at `/usr/local/bin/python3`) and stops with an explanatory error when that interpreter is single-arch, instead of silently producing an arm64-only bundle. PyYAML is installed from source in that venv, because its wheels ship a single architecture only.
