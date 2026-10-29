@@ -38,6 +38,49 @@ class TestTypoLima(unittest.TestCase):
         self.assertEqual(typolima.fix_text("než 90 % standard", rules), "než 90\u00A0% standard")
         self.assertEqual(typolima.fix_text("100,- %", rules), "100,\u00A0–\u00A0%")
 
+    def test_period_spacing_keeps_dotted_abbreviations(self):
+        # „končí.Nová věta“ -> mezera, ale tituly s tečkami se nesmí roztrhnout
+        rules = typolima.load_rules("cs", self.rules_dir)
+        cases = [
+            ("Návrh prošel.Nyní ho posoudí Senát.", "Návrh prošel. Nyní ho posoudí Senát."),
+            ("Ph.D.", "Ph.D."),
+            ("LL.M.", "LL.M."),
+            ("M.A.", "M.A."),
+            ("B.S.", "B.S."),
+            ("J.A.Komenský", "J.A.Komenský"),
+            ("Ing. Bc. Marie Pošarová Ph.D., MBA", "Ing. Bc. Marie Pošarová Ph.D., MBA"),
+            ("Prof. PhDr. Petr Fiala Ph.D., LL.M.", "Prof. PhDr. Petr Fiala Ph.D., LL.M."),
+            ("Mgr. Jan Berki Ph.D.", "Mgr. Jan Berki Ph.D."),
+            # zkratky před jménem dostanou mezeru (nejsou to tečkované tituly)
+            ("Ing.Jiří Novák", "Ing. Jiří Novák"),
+            ("Mgr.Jana Nová", "Mgr. Jana Nová"),
+        ]
+        for src, expected in cases:
+            self.assertEqual(typolima.fix_text(src, rules), expected, src)
+
+    def test_iso_dates_keep_hyphens(self):
+        # Rozsahové pravidlo dělá z "10-20" en-dash, ale ISO data musí zůstat
+        rules = typolima.load_rules("cs", self.rules_dir)
+        self.assertEqual(typolima.fix_text("2026-10-29", rules), "2026-10-29")
+        self.assertEqual(
+            typolima.fix_text("Článek z 2026-10-29, změna 2026-11-01", rules),
+            "Článek z\u00A02026-10-29, změna 2026-11-01",
+        )
+        # rozsahy let se naopak na en-dash převádět mají
+        self.assertEqual(typolima.fix_text("2010-2015", rules), "2010–2015")
+
+    def test_identifiers_are_not_thousands_grouped(self):
+        # IČO, čísla dokumentů a URL fragmenty jsou identifikátory, ne počty
+        rules = typolima.load_rules("cs", self.rules_dir)
+        self.assertEqual(typolima.fix_text("IČO: 44361751", rules), "IČO: 44361751")
+        self.assertEqual(typolima.fix_text("IČO 44361751", rules), "IČO 44361751")
+        self.assertEqual(typolima.fix_text("č. 86327", rules), "č. 86327")
+        self.assertEqual(typolima.fix_text("ID 123456789", rules), "ID 123456789")
+        self.assertEqual(typolima.fix_text("?G=86327", rules), "?G=86327")
+        # počty se tisícovým oddělovačem dělí dál
+        self.assertEqual(typolima.fix_text("44361751 Kč", rules), "44\u00A0361\u00A0751\u00A0Kč")
+        self.assertEqual(typolima.fix_text("celkem 123456 hlasů", rules), "celkem 123\u00A0456 hlasů")
+
     def test_fix_text_en(self):
         rules = typolima.load_rules("en", self.rules_dir)
         self.assertEqual(typolima.fix_text('"Hello"', rules), "“Hello”")

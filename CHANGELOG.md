@@ -5,6 +5,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-10-29
+
+### Fixed
+- Space-insertion rule after a period (`\.([A-Z])` -> `". "`) tore dotted abbreviations apart: `Ph.D.` became `Ph. D.`, `LL.M.` became `LL. M.`, `B.S.` became `B. S.` and `J.A.Komenský` became `J. A. Komenský`. The rule is now a context-aware replacement (`_fix_period_spacing()`) that leaves a period alone when the token in front of it is the head or the tail of a dotted abbreviation. Normal sentence breaks (`končí.Nová věta` -> `končí. Nová věta`) and abbreviations glued to a name (`Ing.Jiří` -> `Ing. Jiří`) still get their space.
+- The range rule (`(?<=\d)-(?=\d)`) rewrote the hyphens of ISO dates - `2026-10-29` came out as `2026–10–29`, which silently breaks machine-readable date stamps in article metadata. ISO dates (`YYYY-MM-DD`) are now frozen while the dash rules run and restored afterwards.
+- The thousands-separator rule regrouped numbers that are identifiers rather than quantities: an IČO (`IČO: 44361751`) became `44 361 751`, a document number (`č. 86327`) became `86 327`, and a URL/query fragment (`?G=86327`) was regrouped as well. Numbers are now left alone when they follow a label declared in the new per-language `numbers.identifier_labels` list (cs: `IČO`, `IČ`, `DIČ`, `PSČ`, `ID`, `č`, `číslo`, `kód`, `tel`, `fax`, `vs`, `sp. zn`, ...) or when they are part of a URL/query/code token (`/ ? & = _ # @` next to them).
+- `fix_text()` accepts an optional `context` argument with the text immediately preceding the processed string. `process_soup()` and `process_html_preserve_format()` fill it in, so an identifier label that lives in a sibling element (`<strong>IČO:</strong> 44361751`) is still recognised - text nodes used to be processed in isolation, which made the label invisible.
+
+### Added
+- Tests for period spacing around dotted abbreviations, ISO dates and identifier numbers (`test_period_spacing_keeps_dotted_abbreviations`, `test_iso_dates_keep_hyphens`, `test_identifiers_are_not_thousands_grouped`).
+- `numbers.identifier_labels` added to `validate_rules()` (must be a list when present).
+
+### Known issues
+- `--preserve-format` (the regex tokenizer) runs the text rules on raw HTML, so an entity can be mistaken for punctuation: `S&amp;P` gets a space after the `;` (`S&amp; P`). The BeautifulSoup path decodes entities first and is not affected - prefer it for HTML with entities.
+
 ## [1.3.0] - 2026-07-27
 
 ### Added

@@ -195,8 +195,12 @@ def validate_rules(rules: Dict[str, Any], lang: str) -> None:
         raise ValueError(f"Rules for '{lang}': 'non_breaking_prepositions' must be a list")
 
     numbers = rules.get("numbers")
-    if numbers is not None and not isinstance(numbers, dict):
-        raise ValueError(f"Rules for '{lang}': 'numbers' must be a dict")
+    if numbers is not None:
+        if not isinstance(numbers, dict):
+            raise ValueError(f"Rules for '{lang}': 'numbers' must be a dict")
+        labels = numbers.get("identifier_labels")
+        if labels is not None and not isinstance(labels, list):
+            raise ValueError(f"Rules for '{lang}': 'numbers.identifier_labels' must be a list")
 
     punc = rules.get("punctuation")
     if punc is not None and not isinstance(punc, dict):
@@ -238,12 +242,84 @@ def load_rules(lang: str, rules_dir: Path = None) -> Dict[str, Any]:
     return rules
 
 
-def fix_text(text: str, rules: Dict[str, Any]) -> str:
+# A period directly followed by an ASCII uppercase letter - the only place
+# where fix_text() has to decide whether to insert a space.
+_PERIOD_BEFORE_UPPER = re.compile(r"\.([A-Z])")
+
+
+def _fix_period_spacing(text: str) -> str:
+    """
+    Add a space after a period that is glued to the next sentence
+    ("končí.Nová věta" -> "končí. Nová věta"), but leave dotted
+    abbreviations alone.
+
+    Dotted abbreviations are the reason this cannot be a plain regex: the
+    parts are short and separated by periods, so "Ph.D." would be torn into
+    "Ph. D.", "LL.M." into "LL. M." and "B.S." into "B. S." - all of which
+    are wrong (and destructive) spellings of Czech/international academic
+    titles. The rule therefore looks at the word in front of the period:
+
+    * a short (<= 3 letters) token that is itself preceded by a period is
+      the tail of a dotted abbreviation ("Ph.D." -> "D", "LL.M." -> "M"),
+    * a short token followed by "<uppercase><period>" is its head
+      ("B.S." -> "B.", "M.A." -> "M.").
+
+    Anything else is treated as a sentence break and gets the space.
+    """
+    def repl(match: "re.Match") -> str:
+        i = match.start()  # index of the period
+        j = i
+        while j > 0 and text[j - 1].isascii() and text[j - 1].isalpha():
+            j -= 1
+        token = text[j:i]
+        if token and len(token) <= 3:
+            # tail of a dotted abbreviation: "…Ph.D.", "…LL.M.", "…J.A."
+            if j > 0 and text[j - 1] == ".":
+                return match.group(0)
+            # head of a dotted abbreviation: "B.S.", "M.A.", "Ph.D."
+            if i + 2 < len(text) and text[i + 2] == ".":
+                return match.group(0)
+        return ". " + match.group(1)
+
+    return _PERIOD_BEFORE_UPPER.sub(repl, text)
+
+
+_ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+# Private-use character that no typographic rule produces, used to freeze the
+# hyphens of ISO dates while the dash rules run.
+_ISO_DATE_SENTINEL = "\uE000"
+
+
+def _protect_iso_dates(text: str) -> str:
+    """
+    Freeze the hyphens in ISO dates (2026-10-29).
+
+    The range rule turns "-" between digits into an en-dash ("10-20" ->
+    "10–20"), which is right for ranges but wrong for ISO dates: those are
+    machine-readable stamps (article metadata, sitemaps, API examples) and
+    must keep their hyphens. Restoring happens in _restore_iso_dates().
+    """
+    return _ISO_DATE_RE.sub(
+        lambda m: m.group(0).replace("-", _ISO_DATE_SENTINEL), text
+    )
+
+
+def _restore_iso_dates(text: str) -> str:
+    return text.replace(_ISO_DATE_SENTINEL, "-")
+
+
+def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     """
     Apply typographic rules to a plain text string.
+
+    `context` is the text immediately preceding the string in the document
+    (previous text nodes/siblings). It is only used to recognise identifier
+    labels that live in a different element ("IČO: <b>44361751</b>").
     """
     if not text.strip():
         return text
+
+    text = _protect_iso_dates(text)
 
     # ──────────────────────────────────────
     # 1. Quotes – simple version first
@@ -289,7 +365,28 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
         # 1234567 → 1 234 567   (very simple – can be improved)
         def group(match):
             return re.sub(r"(\d)(?=(\d{3})+(?!\d))", rf"\1{thousands_sep}", match.group(0))
-        text = re.sub(r"\b\d{5,}\b", group, text)
+
+        # Numbers that are identifiers, not quantities, must keep their digits
+        # together: an IČO ("IČO: 44361751"), a document/act number ("č. 86327")
+        # or a fragment of a URL/query ("?G=86327"). The languages declare the
+        # labels that introduce an identifier in `numbers.identifier_labels`.
+        identifier_labels = [
+            str(lab) for lab in (num.get("identifier_labels") or []) if str(lab).strip()
+        ]
+
+        def group_unless_identifier(match):
+            start, end = match.span()
+            before = text[start - 1] if start else ""
+            after = text[end] if end < len(text) else ""
+            if (before and before in "/?&=_#@") or (after and after in "/?&=_#@"):
+                return match.group(0)
+            head = context + text[:start]
+            for lab in identifier_labels:
+                if re.search(rf"(?:^|[^\w]){re.escape(lab)}[.:]?\s*$", head, re.IGNORECASE):
+                    return match.group(0)
+            return group(match)
+
+        text = re.sub(r"\b\d{5,}\b", group_unless_identifier, text)
 
     # number + unit → number&nbsp;unit
     if unit_nnbsp:
@@ -386,7 +483,9 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
 
     # Ensure space after period only if followed by an uppercase letter
     # to avoid splitting URLs, hostnames, or lowercase abbreviations.
-    text = re.sub(r"\.([A-Z])", r". \1", text)
+    # Dotted abbreviations (Ph.D., LL.M., B.S.) are left untouched - see
+    # _fix_period_spacing().
+    text = _fix_period_spacing(text)
 
     # Multiple spaces to single space
     text = re.sub(r" {2,}", " ", text)
@@ -424,7 +523,7 @@ def fix_text(text: str, rules: Dict[str, Any]) -> str:
         text = re.sub(r"==>", "⟹", text)
         text = re.sub(r"<=>", "⇔", text)
 
-    return text
+    return _restore_iso_dates(text)
 
 
 def _protect_frontmatter(content: str) -> tuple:
@@ -506,22 +605,41 @@ def fix_markdown(content: str, rules: Dict[str, Any]) -> str:
 SKIP_TAGS = {"script", "style", "code", "pre", "samp", "var", "kbd", "tt"}
 
 
+def _text_before(node, limit: int = 80) -> str:
+    """Text of the preceding siblings (same parent), for rules that need context.
+
+    Text nodes are processed one by one, yet some decisions depend on what
+    stands just before them - "IČO:" in <strong>IČO:</strong> 44361751 is a
+    separate node from the number, and the number must not be regrouped to
+    "44 361 751".
+    """
+    parts: List[str] = []
+    length = 0
+    for sibling in node.previous_siblings:
+        text = sibling.get_text() if hasattr(sibling, "get_text") else str(sibling)
+        parts.append(text)
+        length += len(text)
+        if length >= limit:
+            break
+    return "".join(reversed(parts))[-limit:]
+
+
 def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
     """
     Recursively process a BeautifulSoup object, skipping code and script tags.
     """
-    def recurse(node):
+    def recurse(node, context: str = ""):
         if isinstance(node, (Comment, Doctype)):
             return
         if isinstance(node, NavigableString):
             if node.parent and node.parent.name in SKIP_TAGS:
                 return
-            new = fix_text(str(node), rules)
+            new = fix_text(str(node), rules, context)
             if new != str(node):
                 node.replace_with(new)
         else:
             for child in list(node.children):
-                recurse(child)
+                recurse(child, _text_before(child))
 
     recurse(soup)
 
@@ -554,6 +672,10 @@ def process_html_preserve_format(content: str, rules: Dict[str, Any]) -> str:
     tokens = _MARKUP_TOKEN_RE.split(content)
     skip_stack = []
     out = []
+    # Tail of the last ~80 characters of *text* seen so far, handed to
+    # fix_text() as context (identifier labels often sit in a sibling
+    # element, e.g. "<strong>IČO:</strong> 44361751").
+    text_tail = ""
 
     for i, token in enumerate(tokens):
         if i % 2 == 1:
@@ -571,7 +693,12 @@ def process_html_preserve_format(content: str, rules: Dict[str, Any]) -> str:
                         elif not token.rstrip().endswith("/>"):
                             skip_stack.append(name)
         else:
-            out.append(token if skip_stack else fix_text(token, rules))
+            if skip_stack:
+                out.append(token)
+            else:
+                fixed = fix_text(token, rules, text_tail)
+                out.append(fixed)
+                text_tail = (text_tail + fixed)[-80:]
 
     return "".join(out)
 

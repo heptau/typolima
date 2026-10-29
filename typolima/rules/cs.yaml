@@ -23,6 +23,9 @@ numbers:
   thousands_sep: "\u00A0"
   decimal_sep: ","
   unit_nnbsp: true
+  # Čísla za těmito popisky jsou identifikátory, ne počty — tisíce se v nich
+  # neoddělují („IČO: 44361751“ zůstane celé, „č. 86327“ taky).
+  identifier_labels: [IČO, IČ, DIČ, PSČ, ID, č, číslo, kód, tel, fax, mobil, vs, sp. zn, var. symbol, bank. účet, účet]
 
 punctuation:
   space_before: []
