@@ -9,7 +9,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  build-pip        Build Python wheel distribution"
-	@echo "  build-bin        Build standalone binary (using PyInstaller)"
+	@echo "  build-bin        Build universal2 standalone binary (using PyInstaller)"
 	@echo "  prepare-release  Bump VERSION, update CHANGELOG, prepare release notes"
 	@echo "  release          Full release using GoReleaser (usage: make release VERSION=X.Y.Z)"
 	@echo "  snapshot         Local release test using GoReleaser"
@@ -19,6 +19,16 @@ help:
 
 VENV = venv
 PYTHON = $(VENV)/bin/python3
+
+# The standalone binary is shipped as a universal2 Mach-O so the same file runs
+# natively on Apple Silicon and Intel. PyInstaller can only produce that when it
+# runs under a universal2 CPython, which the Homebrew-based venv above is not, so
+# the binary uses its own interpreter and virtualenv. Override BUILD_PYTHON when
+# your universal2 Python lives elsewhere.
+BUILD_PYTHON ?= /usr/local/bin/python3
+BUILD_VENV = build-venv
+BUILD_VENV_PYTHON = $(BUILD_VENV)/bin/python3
+TARGET_ARCH ?= universal2
 
 .PHONY: test
 test:
@@ -31,11 +41,11 @@ build-pip: clean
 	@$(PYTHON) -m build --outdir $(DIST_DIR)
 
 .PHONY: build-bin
-build-bin:
-	@echo "Building standalone binary (v$(VERSION))..."
+build-bin: $(BUILD_VENV_PYTHON)
+	@echo "Building universal binary (v$(VERSION))..."
 	@mkdir -p $(RELEASE_DIR)
-	@$(PYTHON) -m pip install pyinstaller
-	@$(PYTHON) -m PyInstaller --onefile --name typolima \
+	@$(BUILD_VENV_PYTHON) -m PyInstaller --onefile --name typolima \
+		--target-arch $(TARGET_ARCH) \
 		--add-data "typolima/rules/*.yaml:typolima/rules" \
 		--add-data "VERSION:." \
 		--runtime-hook pyinstaller_hooks/pyi_rth_disable_mp.py \
@@ -52,7 +62,26 @@ build-bin:
 		--collect-submodules hashlib \
 		typolima/__main__.py
 	@mv dist/typolima $(RELEASE_DIR)/typolima-$(VERSION)-macos
+	@echo "Architectures in $(RELEASE_DIR)/typolima-$(VERSION)-macos: $$(lipo -archs $(RELEASE_DIR)/typolima-$(VERSION)-macos)"
 	@echo "Binary created in $(RELEASE_DIR)/"
+
+# Built on demand. PyYAML has single-architecture wheels only, so it is installed
+# from source: without Cython that yields the pure-Python implementation, which
+# parses identically and keeps the bundle architecture-neutral.
+$(BUILD_VENV_PYTHON):
+	@if ! file -L "$(BUILD_PYTHON)" | grep -q "universal binary"; then \
+		echo "Error: $(BUILD_PYTHON) is not a universal2 Python, so a binary that runs on"; \
+		echo "both Apple Silicon and Intel cannot be built."; \
+		echo "Install the universal2 build from python.org, or point the build at one:"; \
+		echo "    make build-bin BUILD_PYTHON=/path/to/universal2/python3"; \
+		exit 1; \
+	fi
+	@echo "Creating $(BUILD_VENV) with $(BUILD_PYTHON)..."
+	@$(BUILD_PYTHON) -m venv $(BUILD_VENV)
+	@$(BUILD_VENV_PYTHON) -m pip -q install --upgrade pip
+	@$(BUILD_VENV_PYTHON) -m pip -q install pyinstaller beautifulsoup4 lxml tqdm
+	@$(BUILD_VENV_PYTHON) -m pip -q install --no-binary PyYAML --force-reinstall PyYAML
+	@echo "Build environment ready."
 
 .PHONY: snapshot
 snapshot: clean

@@ -83,17 +83,18 @@ Releases are cut with a single command:
 make release VERSION=X.Y.Z
 ```
 
-Before running it, make sure `CHANGELOG.md` has real content under `## [Unreleased]` — the command refuses to run if that section is empty, or if `X.Y.Z` already has an entry in the changelog (both would otherwise produce an empty or duplicate GitHub Release).
+Before running it, make sure `CHANGELOG.md` has real content under `## [Unreleased]`. The command stops with an explanatory message when that section is empty, when `X.Y.Z` already has a tag, when the working tree is dirty, or when the branch is out of sync with its upstream.
 
 What it does, in order:
-1.  `prepare-release`: writes `X.Y.Z` into `VERSION`, renames `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - <today>`, adds a fresh empty `## [Unreleased]` above it for the next cycle, extracts that version's notes into `release-notes.md`, and commits + pushes all of it as a single `Release vX.Y.Z` commit.
+1.  `prepare-release`: writes `X.Y.Z` into `VERSION`, renames `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - <today>`, adds a fresh empty `## [Unreleased]` above it for the next cycle, extracts that version's notes into `release-notes.md`, and commits + pushes all of it as a single `Release vX.Y.Z` commit. If the feature commit already bumped `VERSION` and wrote the dated changelog section (a common pattern here), the bump commit is skipped and only the release notes are regenerated.
 2.  Creates and pushes the git tag `vX.Y.Z`.
-3.  Runs `goreleaser release --clean --release-notes=release-notes.md`, which builds the macOS binaries (PyInstaller, arm64 + amd64), publishes the GitHub Release using `release-notes.md` as the release body, and updates the formula in `heptau/homebrew-tap`.
+3.  Runs `goreleaser release --clean --release-notes=release-notes.md`, which builds one universal2 macOS binary (PyInstaller, runs natively on Apple Silicon and Intel), publishes the GitHub Release using `release-notes.md` as the release body, and updates the formula in `heptau/homebrew-tap`.
 
 ### Prerequisites
 
 - `goreleaser` installed locally (`brew install goreleaser`).
 - `GITHUB_TOKEN` exported in your shell, with permission to push tags/releases to this repo and to `heptau/homebrew-tap`.
+- A universal2 CPython for the PyInstaller step. `make build-bin` builds its own `build-venv` from `BUILD_PYTHON` (default `/usr/local/bin/python3`, i.e. the python.org installer) and refuses to start when that interpreter is single-arch, as Homebrew's Python is. For a different interpreter run `make build-bin BUILD_PYTHON=/path/to/universal2/python3` once beforehand; the existing `build-venv` is then reused by the release.
 - A clean working tree on `main`, up to date with `origin/main`.
 
 To dry-run the GoReleaser part only (build + package, no publishing, no tag) use `make snapshot`.

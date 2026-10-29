@@ -13,6 +13,7 @@ venv/
 dist/
 release/
 build/
+build-venv/
 *.spec
 
 # OS specifics
