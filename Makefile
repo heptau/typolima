@@ -62,29 +62,53 @@ snapshot: clean
 .PHONY: prepare-release
 prepare-release:
 	@echo "Preparing release v$(VERSION)..."
+	@if git rev-parse -q --verify "refs/tags/v$(VERSION)" >/dev/null; then \
+		echo "Error: tag v$(VERSION) already exists, so this version was already released. Pick a new VERSION."; \
+		exit 1; \
+	fi
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: working tree is not clean - commit or stash your changes before releasing:"; \
+		git status --short; \
+		exit 1; \
+	fi
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	if git rev-parse -q --verify "$$BRANCH@{u}" >/dev/null; then \
+		if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse "$$BRANCH@{u}")" ]; then \
+			echo "Error: $$BRANCH is not in sync with its upstream - push or pull first."; \
+			exit 1; \
+		fi; \
+	fi
 	@if grep -q "^## \[$(VERSION)\]" CHANGELOG.md; then \
-		echo "Error: CHANGELOG.md already has an entry for [$(VERSION)]. Did you already release this version, or forget to bump VERSION?"; \
+		if [ "$$(cat VERSION)" != "$(VERSION)" ]; then \
+			echo "Error: CHANGELOG.md already has a [$(VERSION)] entry but VERSION contains $$(cat VERSION)."; \
+			exit 1; \
+		fi; \
+		echo "VERSION and CHANGELOG.md are already bumped to $(VERSION) - skipping the bump commit."; \
+	elif [ "$$(cat VERSION)" = "$(VERSION)" ]; then \
+		echo "Error: VERSION is already $(VERSION) but CHANGELOG.md has no [$(VERSION)] entry. Add entries under [Unreleased] first."; \
 		exit 1; \
+	else \
+		if ! awk '/^## \[Unreleased\]/{f=1; next} /^## \[/{if(f) exit} f{if ($$0 !~ /^[[:space:]]*$$/) found=1} END{exit !found}' CHANGELOG.md; then \
+			echo "Error: CHANGELOG.md's [Unreleased] section is empty (or missing). Nothing to release - add changelog entries first."; \
+			exit 1; \
+		fi; \
+		echo "$(VERSION)" > VERSION; \
+		DATE=$$(date +%Y-%m-%d); \
+		awk -v ver="$(VERSION)" -v date="$$DATE" '{ \
+			if ($$0 ~ /^## \[Unreleased\]/) { \
+				print "## [Unreleased]"; \
+				print ""; \
+				print "## [" ver "] - " date; \
+			} else { \
+				print; \
+			} \
+		}' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md; \
+		git add VERSION CHANGELOG.md; \
+		git commit -m "Release v$(VERSION)"; \
+		git push origin HEAD; \
 	fi
-	@if ! awk '/^## \[Unreleased\]/{f=1; next} /^## \[/{if(f) exit} f{if ($$0 !~ /^[[:space:]]*$$/) found=1} END{exit !found}' CHANGELOG.md; then \
-		echo "Error: CHANGELOG.md's [Unreleased] section is empty (or missing). Nothing to release - add changelog entries first."; \
-		exit 1; \
-	fi
-	@echo "$(VERSION)" > VERSION
-	@DATE=$$(date +%Y-%m-%d); \
-	awk -v ver="$(VERSION)" -v date="$$DATE" '{ \
-		if ($$0 ~ /^## \[Unreleased\]/) { \
-			print "## [Unreleased]"; \
-			print ""; \
-			print "## [" ver "] - " date; \
-		} else { \
-			print; \
-		} \
-	}' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
 	@awk '/^## \[$(VERSION)\]/{found=1; next} /^## \[/{if(found) exit} found{print}' CHANGELOG.md > release-notes.md
-	@git add VERSION CHANGELOG.md
-	@git commit -m "Release v$(VERSION)"
-	@git push origin HEAD
+	@echo "Release notes written to release-notes.md"
 
 .PHONY: release
 release: clean prepare-release
