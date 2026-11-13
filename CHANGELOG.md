@@ -5,6 +5,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-11-13
+
 ### Changed
 - Documentation site (`docs/index.html`) redesigned: Source Serif 4 / Inter / JetBrains Mono fonts, light and dark theme, before/after demo, quote specimen section, filterable language table, copy buttons, and new feature descriptions (`--preserve-format`, Markdown protection, numbers and prices).
 
