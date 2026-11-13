@@ -9,7 +9,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Documentation site (`docs/index.html`) redesigned: Source Serif 4 / Inter / JetBrains Mono fonts, light and dark theme, before/after demo, quote specimen section, filterable language table, copy buttons, and new feature descriptions (`--preserve-format`, Markdown protection, numbers and prices).
 
 ### Fixed
+- **PHP and template files were corrupted in the default mode.** Every HTML-like file went through a BeautifulSoup parse/serialize round-trip, which turned `<?php ... ?>` into `<!--?php ... ?-->` and wrapped fragments/partials in `<html><body>`. The round-trip is now used only for complete, static `.html`/`.htm` documents; `.php`, `.hbs`, `.liquid`, `.latte`, fragments and anything containing `<?`, `{{` or `{%` are edited in place by the `--preserve-format` tokenizer.
+- The `--preserve-format` tokenizer ended a PHP block at the first `>` (`$a > $b`, `->`) and then "fixed" the rest of the PHP code as prose. PHP blocks (also unterminated ones at the end of a file) and CDATA sections are now single tokens.
+- `fix_text()` rewrote code-like spans inside prose: template tags (`{{ if eq .Lang "cs" }}`, `{% ... %}`, `{$latte}`), HTML entities (`AT&amp;T` -> `AT&amp; T`), URLs and e-mail addresses (`John.Doe@example.com` -> `John. Doe@...`, French `https ://`). These spans are now taken out before the rules run and restored afterwards.
+- The unit rule joined lines (`2020\nByl` -> `2020 Byl`) and split identifiers and ordinals (`H2O` -> `H2 O`, `3D` -> `3 D`, `1st` -> `1 st`).
+- Collapsing multiple spaces removed indentation (nested Markdown lists lost their nesting, HTML source lost its layout) and Markdown hard line breaks; bracket/quote cleanup could swallow line breaks. These rules now work within a line and between words only.
+- Markdown: inline code, `~~~` fences, link targets and raw HTML tags are protected; frontmatter is no longer cut at a `---` inside a value, and TOML (`+++`) frontmatter is recognised.
+- A space before a period was removed even when the period starts a word (`framework .NET` -> `framework. NET`).
+- Languages without a `dashes` section (pt) turned every double space into a dash.
+- French spacing split times (`10:30` -> `10 :30`); a closing single quote was turned into an apostrophe (`'hello'` -> `'hello’`).
+- `fix_text()` raised `NameError` for rules with `numbers.unit_nnbsp: false`.
+- `load_rules()` returned the cached dict itself, so `--aggressive` leaked into later loads; the cache also held only one language.
+- CLI: `--lang` and the config language are normalized (`CZ`, `en-us`, `cs-CZ`); `.typolimarc` is found from a relative path; a missing path is reported and exits with status 1 (it was silently ignored); a directory without `--recursive` prints a warning; `--recursive` honours `--include` patterns outside the default extensions; `node_modules/*`-style excludes match nested directories; broken rule files no longer end in a traceback; `--verbose` quote/dash statistics were always zero; the `--diff` header was printed twice.
+- `<html lang="cs-CZ">` is detected (falls back to the primary subtag); `data-lang` is no longer mistaken for `lang`.
 - The "Supported Languages" table on the docs site listed wrong quotes for several languages (English shown as straight `" "`, Polish and Hungarian as `„ “`) and covered only 14 of 34 rule files. It is now generated from `typolima/rules/*.yaml` by `scripts/gen_docs_languages.py`.
+
+### Changed (behaviour)
+- Auto-detection order is now HTML `lang` -> filename -> `.typolimarc`, so the config language is the fallback its documentation describes; with `--auto-detect`, `--lang` is used when nothing is detected.
+- Without `--in-place`/`--dry-run` the text is written to stdout as-is (unchanged files too, no extra newline) and status messages go to stderr.
+- `<textarea>` content is skipped; `make test` runs every file in `tests/`.
 
 ## [1.3.2] - 2026-10-29
 

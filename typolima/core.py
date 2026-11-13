@@ -9,10 +9,11 @@ import re
 import sys
 from importlib.metadata import version as get_package_version
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 try:
-    from bs4 import BeautifulSoup, NavigableString, Comment, Doctype
+    from bs4 import BeautifulSoup, NavigableString
+    from bs4.element import PreformattedString
     import yaml
 except ImportError:
     print("Error: missing dependencies", file=sys.stderr)
@@ -29,7 +30,7 @@ except ImportError:
 LANG_CODE_MAP = {
     "cs": "cs", "cz": "cs",
     "sk": "sk",
-    "en": "en", "en-us": "en-US", "en-gb": "en-GB", "en-us": "en-US",
+    "en": "en", "en-us": "en-US", "en-gb": "en-GB",
     "fr": "fr",
     "de": "de",
     "it": "it",
@@ -62,15 +63,29 @@ LANG_CODE_MAP = {
 SUPPORTED_LANGS = set(LANG_CODE_MAP.values())
 
 
+def normalize_lang(raw: Any) -> Optional[str]:
+    """
+    Map a user/document supplied language tag to a supported rules name.
+
+    Accepts any case and both separators ("EN_us" -> "en-US") and falls back
+    to the primary subtag for regional variants without their own rules
+    ("cs-CZ" -> "cs", "de-AT" -> "de"). Returns None for unknown languages.
+    """
+    if not raw or not isinstance(raw, str):
+        return None
+    tag = raw.strip().lower().replace("_", "-")
+    if tag in LANG_CODE_MAP:
+        return LANG_CODE_MAP[tag]
+    primary = tag.split("-", 1)[0]
+    return LANG_CODE_MAP.get(primary)
+
+
 def detect_lang_from_html(content: str) -> str:
     """Detect language from <html lang=""> attribute."""
-    match = re.search(r'<html[^>]+lang=["\']([^"\']+)["\']', content, re.IGNORECASE)
+    # \s before "lang" so that data-lang="" / hreflang="" are not picked up.
+    match = re.search(r'<html\b[^>]*\slang\s*=\s*["\']([^"\']+)["\']', content, re.IGNORECASE)
     if match:
-        lang_raw = match.group(1).lower().strip()
-        if lang_raw in LANG_CODE_MAP:
-            return LANG_CODE_MAP[lang_raw]
-        if lang_raw in SUPPORTED_LANGS:
-            return lang_raw
+        return normalize_lang(match.group(1))
     return None
 
 
@@ -78,68 +93,60 @@ def detect_lang_from_filename(path: Path) -> str:
     """Detect language from filename pattern like article.cs.html or article.en-US.md"""
     name = path.stem.lower()
 
-    import re
-    match = re.search(r'\.([a-z]{2}(?:-[a-z]{2})?)$', name)
+    match = re.search(r'\.([a-z]{2}(?:[-_][a-z]{2})?)$', name)
     if match:
-        lang_raw = match.group(1)
-        if lang_raw in LANG_CODE_MAP:
-            return LANG_CODE_MAP[lang_raw]
-        if lang_raw in SUPPORTED_LANGS:
-            return lang_raw
+        return normalize_lang(match.group(1))
 
     return None
+
+
+def _config_search_dirs(path: Path) -> List[Path]:
+    """
+    Directories to look for .typolimarc in: the given directory (or the
+    directory of the given file) and up to four of its parents.
+
+    The path is made absolute first - a relative "page.html" has "." as its
+    only parent, so the project root above the current directory would
+    otherwise never be reached.
+    """
+    try:
+        path = path.resolve()
+    except OSError:
+        path = path.absolute()
+    return ([path] + list(path.parents))[:5]
 
 
 def detect_lang_from_config(path: Path) -> str:
     """Detect language from .typolimarc config file in same or parent directory."""
-    search_paths = [path] + list(path.parents)
-
-    for sp in search_paths[:5]:
-        config_file = sp / ".typolimarc"
-        if config_file.is_file():
-            try:
-                with config_file.open(encoding="utf-8") as f:
-                    config = yaml.safe_load(f)
-                if config and isinstance(config, dict):
-                    lang = config.get("language")
-                    if lang and isinstance(lang, str):
-                        if lang in LANG_CODE_MAP:
-                            return LANG_CODE_MAP[lang]
-                        if lang in SUPPORTED_LANGS:
-                            return lang
-            except Exception:
-                pass
-        if (sp / ".git").exists():
-            break
-    return None
+    return normalize_lang(load_config_from_file(path).get("language"))
 
 
 def auto_detect_language(path: Path, content: str = None) -> str:
-    """Auto-detect language from multiple sources."""
-    # 1. From config file (.typolimarc)
-    lang = detect_lang_from_config(path)
-    if lang:
-        return lang
+    """
+    Auto-detect language from multiple sources, most specific first.
 
-    # 2. From HTML lang attribute
+    What the document says about itself wins over the project-wide default:
+    the .typolimarc language is only a fallback, otherwise a single config
+    file would force one language onto every page of a multilingual site.
+    """
+    # 1. From HTML lang attribute
     if content:
         lang = detect_lang_from_html(content)
         if lang:
             return lang
 
-    # 3. From filename pattern
+    # 2. From filename pattern
     lang = detect_lang_from_filename(path)
     if lang:
         return lang
 
-    return None
+    # 3. From config file (.typolimarc)
+    return detect_lang_from_config(path)
 
 
 def load_config_from_file(path: Path) -> Dict[str, Any]:
     """Load full configuration from .typolimarc file."""
-    search_paths = [path] + list(path.parents)
-
-    for sp in search_paths[:5]:
+    for sp in _config_search_dirs(path):
         config_file = sp / ".typolimarc"
         if config_file.is_file():
             try:
@@ -152,7 +159,6 @@ def load_config_from_file(path: Path) -> Dict[str, Any]:
         if (sp / ".git").exists():
             break
     return {}
-    tqdm = None
 
 
 UNICODE_NBSP = "\u00A0"
@@ -217,7 +223,7 @@ def validate_rules(rules: Dict[str, Any], lang: str) -> None:
                 raise ValueError(f"Rules for '{lang}': custom_regex[{i}] missing 'pattern' or 'replacement'")
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=None)
 def _load_rules_cached(lang: str, rules_dir_str: str) -> Dict[str, Any]:
     """Cached implementation - rules_dir must be hashable (string)."""
     rules_dir = Path(rules_dir_str)
@@ -239,7 +245,9 @@ def load_rules(lang: str, rules_dir: Path = None) -> Dict[str, Any]:
 
     rules = _load_rules_cached(lang, str(rules_dir.resolve()))
     validate_rules(rules, lang)
-    return rules
+    # Hand out a copy: callers add run-time flags ("_aggressive_active") and
+    # those must not leak into the cached rules of later load_rules() calls.
+    return dict(rules)
 
 
 # A period directly followed by an ASCII uppercase letter - the only place
@@ -272,6 +280,10 @@ def _fix_period_spacing(text: str) -> str:
         while j > 0 and text[j - 1].isascii() and text[j - 1].isalpha():
             j -= 1
         token = text[j:i]
+        # A period that does not end a word (" .NET", start of the string) is
+        # not a sentence end, so there is nothing to separate.
+        if i == 0 or text[i - 1].isspace():
+            return match.group(0)
         if token and len(token) <= 3:
             # tail of a dotted abbreviation: "…Ph.D.", "…LL.M.", "…J.A."
             if j > 0 and text[j - 1] == ".":
@@ -308,9 +320,67 @@ def _restore_iso_dates(text: str) -> str:
     return text.replace(_ISO_DATE_SENTINEL, "-")
 
 
+# Private-use character standing in for a span that must come through
+# fix_text() byte-for-byte (see _protect_spans()).
+_SPAN_SENTINEL = "\uE001"
+
+_PROTECTED_SPAN_RE = re.compile(
+    "|".join([
+        _SPAN_SENTINEL,                                   # a literal sentinel in the input
+        r"<\?.*?(?:\?>|\Z)",                              # PHP / processing instructions
+        r"\{\{.*?\}\}",                                   # Hugo, Handlebars, Liquid, Jinja output
+        r"\{%.*?%\}",                                     # Liquid / Jinja tags
+        r"\{[^\s{}][^{}\n]*\}",                            # Latte / single-brace macros
+        r"&(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#\d{1,7}|#[xX][0-9a-fA-F]{1,6});",  # HTML entities
+        r"\b(?:https?|ftp)://[^\s<>\"]+(?<![.,;:!?)\]])",   # URLs
+        r"\bwww\.[^\s<>\"]+(?<![.,;:!?)\]])",
+        r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+",                   # e-mail addresses
+    ]),
+    re.DOTALL,
+)
+
+
+def _protect_spans(text: str, pattern: "re.Pattern" = _PROTECTED_SPAN_RE) -> tuple:
+    """
+    Replace everything that is code rather than prose - template tags, PHP
+    blocks, HTML entities, URLs, e-mail addresses - with a sentinel character.
+
+    The typographic rules are plain regexes and cannot tell `{{ if eq .Lang
+    "cs" }}` or "https://example.com/a--b" from a sentence, so these spans
+    are taken out before the rules run and put back afterwards by
+    _restore_spans(). Returns (text_with_sentinels, list_of_spans).
+    """
+    spans: List[str] = []
+
+    def _stash(match: "re.Match") -> str:
+        spans.append(match.group(0))
+        return _SPAN_SENTINEL
+
+    return pattern.sub(_stash, text), spans
+
+
+def _restore_spans(text: str, spans: List[str]) -> Optional[str]:
+    """
+    Put protected spans back in order. Returns None when the number of
+    sentinels no longer matches (a custom rule ate or duplicated one) - the
+    caller then leaves the text untouched rather than risk misplacing code.
+    """
+    if text.count(_SPAN_SENTINEL) != len(spans):
+        return None
+    it = iter(spans)
+    return re.sub(_SPAN_SENTINEL, lambda _m: next(it), text)
+
+
+# Units that are glued to a number on purpose: English ordinals (1st, 2nd)
+# and labels such as 3D, 5G, 4K, 10k, 2x, 1080p. Only consulted when the
+# source has no space between the number and the letters.
+_GLUED_NUMBER_SUFFIXES = {"st", "nd", "rd", "th", "D", "G", "K", "k", "x", "X", "p", "i"}
+
+
 def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     """
-    Apply typographic rules to a plain text string.
+    Apply typographic rules to a plain text string, leaving template tags,
+    PHP blocks, HTML entities, URLs and e-mail addresses untouched.
 
     `context` is the text immediately preceding the string in the document
     (previous text nodes/siblings). It is only used to recognise identifier
@@ -319,6 +389,13 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     if not text.strip():
         return text
 
+    protected, spans = _protect_spans(text)
+    fixed = _restore_spans(_apply_rules(protected, rules, context), spans)
+    return text if fixed is None else fixed
+
+
+def _apply_rules(text: str, rules: Dict[str, Any], context: str = "") -> str:
+    """The rule pipeline behind fix_text(); expects protected spans removed."""
     text = _protect_iso_dates(text)
 
     # ──────────────────────────────────────
@@ -351,7 +428,16 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
         # Replace straight ' with smart apostrophe (usually ’)
         # Only if between words or at the end of a word (e.g. users')
         text = re.sub(r"(\w)'(\w)", rf"\1{apo}\2", text)
-        text = re.sub(r"(\w)'(\s|$)", rf"\1{apo}\2", text)
+
+        def trailing_apostrophe(match):
+            # A straight ' that closes a single-quoted phrase ('hello') is a
+            # quotation mark, not an apostrophe - leave the pair alone.
+            line = text[text.rfind("\n", 0, match.start()) + 1:match.start() + 1]
+            if re.search(r"(?<!\w)'(?=\w)[^']*$", line):
+                return match.group(0)
+            return f"{match.group(1)}{apo}{match.group(2)}"
+
+        text = re.sub(r"(\w)'(\s|$)", trailing_apostrophe, text)
 
     # ──────────────────────────────────────
     # 3. Numbers & units
@@ -388,19 +474,38 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
 
         text = re.sub(r"\b\d{5,}\b", group_unless_identifier, text)
 
+    # Inline whitespace only (space/tab/NBSP) - deliberately excludes \n so a
+    # paragraph or list-item break never gets glued to the next line.
+    _INLINE_WS = rf"[ \t{UNICODE_NBSP}]"
+
+    # Common units or currency symbols that may follow a number
+    units = r"(?:%|[a-zA-Z°]{1,4}|[€$£¥₽₪₺₹]|K[čc])"
+
     # number + unit → number&nbsp;unit
     if unit_nnbsp:
-        # Matches numbers followed by optional space and common units or currency symbols
-        units = r"(?:%|[a-zA-Z°]{1,4}|[€$£¥₽₪₺₹]|K[čc])"
-        text = re.sub(rf"(\d)\s*({units})(?!\w)", rf"\1{UNICODE_NBSP}\2", text)
+        def bind_unit(match):
+            gap, unit = match.group(2), match.group(3)
+            if not gap:
+                if unit in _GLUED_NUMBER_SUFFIXES:
+                    return match.group(0)
+                # Letters on both sides of the number: an identifier such
+                # as H2O or B2B, not a quantity with a unit.
+                k = match.start()
+                while k > 0 and (text[k - 1].isdigit() or text[k - 1] in ".,"):
+                    k -= 1
+                if k > 0 and text[k - 1].isalpha():
+                    return match.group(0)
+            return f"{match.group(1)}{UNICODE_NBSP}{unit}"
+
+        text = re.sub(rf"(\d)({_INLINE_WS}*)({units})(?!\w)", bind_unit, text)
         # Handle prefix currencies like $ or £ (mostly English/US)
-        text = re.sub(rf"([$£¥])\s*(\d)", rf"\1{UNICODE_NBSP}\2", text)
+        text = re.sub(rf"([$£¥]){_INLINE_WS}*(\d)", rf"\1{UNICODE_NBSP}\2", text)
 
     # Price rounding: 100,- -> 100,– (using en-dash)
     text = re.sub(r"(\d),-", rf"\1,{UNICODE_NBSP}–", text)
     # Currency after price dash: , [NBSP] – Kč -> , [NBSP] – [NBSP] Kč
     # We use [\s\u00A0] to match both regular and non-breaking spaces
-    text = re.sub(rf",([\s{UNICODE_NBSP}]*)(–|—)[\s{UNICODE_NBSP}]*({units})(?!\w)", rf",\1\2{UNICODE_NBSP}\3", text)
+    text = re.sub(rf",({_INLINE_WS}*)(–|—){_INLINE_WS}*({units})(?!\w)", rf",\1\2{UNICODE_NBSP}\3", text)
 
     # ──────────────────────────────────────
     # 4. Spaces around punctuation (esp. French)
@@ -409,16 +514,21 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     before = [str(c) for c in punc.get("space_before", []) if c]
     after = [str(c) for c in punc.get("space_after", []) if c]
 
-    # Inline whitespace only (space/tab/NBSP) - deliberately excludes \n so a
-    # paragraph or list-item break never gets glued to the next line.
-    _INLINE_WS = rf"[ \t{UNICODE_NBSP}]"
-
     if before:
         # Filter to ensure we only try to escape strings (to avoid TypeError with bools etc)
         before_strs = [re.escape(str(c)) for c in before if c and isinstance(c, (str, int, float))]
         if before_strs:
-            pat_before = r"(\S)" + _INLINE_WS + r"*(" + "|".join(before_strs) + r")"
-            text = re.sub(pat_before, rf"\1{UNICODE_NBSP}\2", text)
+            pat_before = r"(\S)(" + _INLINE_WS + r"*)(" + "|".join(before_strs) + r")"
+
+            def space_before(match):
+                # "10:30" / "16:9" - a colon between digits is not punctuation.
+                nxt = text[match.end()] if match.end() < len(text) else ""
+                if (match.group(3) == ":" and not match.group(2)
+                        and match.group(1).isdigit() and nxt.isdigit()):
+                    return match.group(0)
+                return f"{match.group(1)}{UNICODE_NBSP}{match.group(3)}"
+
+            text = re.sub(pat_before, space_before, text)
 
     if after:
         after_strs = [re.escape(str(c)) for c in after if c and isinstance(c, (str, int, float))]
@@ -446,33 +556,35 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
                 text = re.sub(pat, rep, text)
     else:
         # Default fallback (conservative)
-        text = re.sub(rf" {_INLINE_WS}*-?{_INLINE_WS}* ", rf"{UNICODE_NBSP}– ", text)
+        text = re.sub(rf"{_INLINE_WS}--?{_INLINE_WS}", rf"{UNICODE_NBSP}– ", text)
         text = re.sub(r"\.{3,}", "…", text)
 
     # ──────────────────────────────────────
     # 6. Punctuation & Space cleanup (General)
     # ──────────────────────────────────────
-    # Clean up spaces inside brackets () [] {}
-    text = re.sub(r"(\(|\[|\{)\s+", r"\1", text)
-    text = re.sub(r"\s+(\)|\]|\})", r"\1", text)
+    # Clean up spaces inside brackets () [] {} - within a line only, so a
+    # line break next to a bracket is never swallowed.
+    text = re.sub(r"(\(|\[|\{)[ \t]+(?=\S)", r"\1", text)
+    text = re.sub(r"(?<=\S)[ \t]+(\)|\]|\})", r"\1", text)
 
     # Cleanup spaces inside smart quotes ONLY if they are NOT French/optional style
     if q.get("primary"):
         o, c = q["primary"]
         if o not in after and o not in before:
-            text = re.sub(rf"{re.escape(o)}\s+", o, text)
+            text = re.sub(rf"{re.escape(o)}[ \t]+(?=\S)", o, text)
         if c not in before and c not in after:
-            text = re.sub(rf"\s+{re.escape(c)}", c, text)
+            text = re.sub(rf"(?<=\S)[ \t]+{re.escape(c)}", c, text)
 
     # Slash cleanup: A / B -> A/B (conservative for short words/numbers)
     text = re.sub(r"(\w) +/ +(\w)", r"\1/\2", text)
 
     # Degree symbol: 20°C -> 20 °C (common in CS, SK, DE, FR)
     if rules.get("locale") in ["cs", "sk", "de", "fr"]:
-        text = re.sub(r"(\d)°([C|F])", rf"\1{UNICODE_NBSP}°\2", text)
+        text = re.sub(r"(\d)°([CF])", rf"\1{UNICODE_NBSP}°\2", text)
 
     # Avoid spaces before comma, period (always safe)
-    text = re.sub(r" +([.,])", r"\1", text)
+    # A period that starts a word (".NET", ".gitignore") is not punctuation.
+    text = re.sub(r" +(,|\.(?!\w))", r"\1", text)
 
     # Avoid spaces before !?; ONLY if not required by language (like French)
     if not before:
@@ -487,8 +599,10 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     # _fix_period_spacing().
     text = _fix_period_spacing(text)
 
-    # Multiple spaces to single space
-    text = re.sub(r" {2,}", " ", text)
+    # Multiple spaces to single space - only between words. Leading spaces
+    # are indentation (nested Markdown lists, HTML source layout) and two
+    # trailing spaces are a Markdown hard line break.
+    text = re.sub(r"(?<=\S) {2,}(?=\S)", " ", text)
 
     # ──────────────────────────────────────
     # 7. Symbols & Common units (Conservative)
@@ -526,43 +640,38 @@ def fix_text(text: str, rules: Dict[str, Any], context: str = "") -> str:
     return _restore_iso_dates(text)
 
 
+_FRONTMATTER_RE = re.compile(
+    r"\A(---|\+\+\+)[ \t]*\r?\n(?:.*?\r?\n)?\1[ \t]*(?:\r?\n|\Z)", re.DOTALL
+)
+
+# Markdown constructs that are code or markup, not prose: fenced code blocks
+# (``` and ~~~), inline code spans, link/image targets and raw HTML tags.
+_MARKDOWN_CODE_RE = re.compile(
+    "|".join([
+        _SPAN_SENTINEL,
+        r"^[ \t]*(```|~~~).*?(?:^[ \t]*\1[ \t]*$|\Z)",   # fenced code blocks
+        r"```.*?```",                                     # inline triple-backtick spans
+        r"`[^`\n]+`",                                     # inline code
+        r"(?<=\])\([^()\s]*(?:[ \t]+\"[^\"\n]*\")?\)",    # link target: [text](url "title")
+        r"<!--.*?-->",                                    # HTML comments
+        r"</?[a-zA-Z][^<>\n]*>",                          # raw HTML tags
+    ]),
+    re.DOTALL | re.MULTILINE,
+)
+
+
 def _protect_frontmatter(content: str) -> tuple:
     """
     Extract and protect YAML frontmatter (---...---) at the start of a file.
     Returns (body, frontmatter_block) where frontmatter_block is None if not found.
     """
-    if not content.startswith("---"):
+    # The delimiters must stand on lines of their own: a "---" inside a value
+    # ("title: a --- b") does not end the block. Hugo's TOML flavour (+++) is
+    # recognised as well.
+    match = _FRONTMATTER_RE.match(content)
+    if not match:
         return content, None
-    end = content.find("---", 3)
-    if end == -1:
-        return content, None
-    frontmatter = content[:end + 3]
-    body = content[end + 3:]
-    # If body starts with a newline, consume it to avoid leading blank line
-    if body.startswith("\n"):
-        body = body[1:]
-    return body, frontmatter
-
-
-def _protect_code_blocks(content: str) -> tuple:
-    """
-    Replace fenced code blocks (```...```) with unique placeholders.
-    Returns (content_with_placeholders, list_of_blocks).
-    """
-    blocks = []
-    def _replacer(match):
-        placeholder = f"\x00CODEBLOCK{len(blocks)}\x00"
-        blocks.append(match.group(0))
-        return placeholder
-    result = re.sub(r"```.*?```", _replacer, content, flags=re.DOTALL)
-    return result, blocks
-
-
-def _restore_code_blocks(content: str, blocks: list) -> str:
-    """Restore code block placeholders with original blocks."""
-    for i, block in enumerate(blocks):
-        content = content.replace(f"\x00CODEBLOCK{i}\x00", block)
-    return content
+    return content[match.end():], match.group(0)
 
 
 # A leading "- " list marker, indented or not. fix_text()'s dash rule turns a
@@ -587,22 +696,23 @@ def _restore_list_markers(content: str) -> str:
 def fix_markdown(content: str, rules: Dict[str, Any]) -> str:
     """
     Apply typographic rules to Markdown content while protecting:
-    - YAML frontmatter (---...---)
-    - Fenced code blocks (```...```)
+    - YAML/TOML frontmatter (---...--- / +++...+++)
+    - Fenced code blocks (```...``` and ~~~...~~~) and inline `code`
+    - Link/image targets and raw HTML tags
     - Leading '-' list markers (incl. nested/indented ones)
     """
     body, frontmatter = _protect_frontmatter(content)
-    body, code_blocks = _protect_code_blocks(body)
-    body = _protect_list_markers(body)
-    body = fix_text(body, rules)
-    body = _restore_list_markers(body)
-    body = _restore_code_blocks(body, code_blocks)
-    if frontmatter:
-        return frontmatter + "\n" + body
-    return body
+    protected, code_spans = _protect_spans(body, _MARKDOWN_CODE_RE)
+    protected = _protect_list_markers(protected)
+    protected = fix_text(protected, rules)
+    protected = _restore_list_markers(protected)
+    restored = _restore_spans(protected, code_spans)
+    if restored is not None:
+        body = restored
+    return (frontmatter or "") + body
 
 
-SKIP_TAGS = {"script", "style", "code", "pre", "samp", "var", "kbd", "tt"}
+SKIP_TAGS = {"script", "style", "code", "pre", "samp", "var", "kbd", "tt", "textarea"}
 
 
 def _text_before(node, limit: int = 80) -> str:
@@ -629,7 +739,9 @@ def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
     Recursively process a BeautifulSoup object, skipping code and script tags.
     """
     def recurse(node, context: str = ""):
-        if isinstance(node, (Comment, Doctype)):
+        # Comments, doctypes, CDATA sections and processing instructions
+        # (<?php ... ?>) are not prose.
+        if isinstance(node, PreformattedString):
             return
         if isinstance(node, NavigableString):
             if node.parent and node.parent.name in SKIP_TAGS:
@@ -647,7 +759,13 @@ def process_soup(soup: BeautifulSoup, rules: Dict[str, Any]):
 # Matches one markup token: an HTML comment, a doctype declaration, or a
 # single tag. Used to tokenize HTML without a full parser so that
 # --preserve-format can leave every byte of markup untouched.
-_MARKUP_TOKEN_RE = re.compile(r"(<!--.*?-->|<!DOCTYPE[^>]*>|<[^>]*>)", re.DOTALL | re.IGNORECASE)
+# PHP blocks / processing instructions and CDATA sections come first: they may
+# contain ">" ("$a > $b", "->"), and a PHP block may run to the end of the file
+# without a closing "?>".
+_MARKUP_TOKEN_RE = re.compile(
+    r"(<!--.*?-->|<\?.*?(?:\?>|\Z)|<!\[CDATA\[.*?\]\]>|<!DOCTYPE[^>]*>|<[^>]*>)",
+    re.DOTALL | re.IGNORECASE,
+)
 _TAG_NAME_RE = re.compile(r"^<\s*(/?)\s*([a-zA-Z][a-zA-Z0-9:-]*)")
 
 
@@ -681,7 +799,7 @@ def process_html_preserve_format(content: str, rules: Dict[str, Any]) -> str:
         if i % 2 == 1:
             # Markup token (tag/comment/doctype) - always passed through unchanged.
             out.append(token)
-            if not token.startswith("<!"):
+            if not token.startswith(("<!", "<?")):
                 m = _TAG_NAME_RE.match(token)
                 if m:
                     is_closing = bool(m.group(1))
@@ -701,6 +819,45 @@ def process_html_preserve_format(content: str, rules: Dict[str, Any]) -> str:
                 text_tail = (text_tail + fixed)[-80:]
 
     return "".join(out)
+
+
+_TEMPLATE_SYNTAX_RE = re.compile(r"<\?|\{\{|\{%")
+_HTML_ROOT_RE = re.compile(r"<html[\s>]", re.IGNORECASE)
+
+
+def _can_reserialize(content: str, suffix: str) -> bool:
+    """
+    Whether an HTML file may safely go through the BeautifulSoup round-trip.
+
+    Parsing and re-serializing is only harmless for a complete, static HTML
+    document. A fragment/partial would get wrapped in <html><body>, PHP
+    blocks would be turned into comments ("<!--?php ... ?-->") and template
+    control flow would be "repaired" as if it were broken markup - so PHP
+    and template files are always edited in place by the tokenizer
+    (process_html_preserve_format) instead.
+    """
+    if suffix not in (".html", ".htm"):
+        return False
+    if _TEMPLATE_SYNTAX_RE.search(content):
+        return False
+    return bool(_HTML_ROOT_RE.search(content))
+
+
+def _matches_pattern(path: Path, patterns: list) -> bool:
+    """
+    Check if path matches any of the glob patterns. A pattern is tried
+    against the file name, the whole path and every trailing part of it, so
+    "node_modules/*" also excludes "site/node_modules/pkg/readme.md".
+    """
+    import fnmatch
+    parts = path.parts
+    candidates = {path.name, str(path), path.as_posix()}
+    candidates.update("/".join(parts[i:]) for i in range(len(parts)))
+    for pattern in patterns:
+        pattern = str(pattern)
+        if any(fnmatch.fnmatch(c, pattern) for c in candidates):
+            return True
+    return False
 
 
 def main():
@@ -756,6 +913,11 @@ def main():
     if args.lang is None and config.get("language"):
         args.lang = config.get("language")
 
+    # Glob patterns may be given as a single string in the config file.
+    for key in ("include", "exclude"):
+        if isinstance(config.get(key), str):
+            config[key] = [config[key]]
+
     if not args.recursive and config.get("recursive"):
         args.recursive = config.get("recursive")
 
@@ -793,53 +955,61 @@ def main():
     default_rules = None
     if not args.auto_detect:
         try:
-            default_rules = load_rules(args.lang)
+            # Accept "CS", "cz", "en-us", "cs-CZ"; unknown names are passed
+            # on unchanged so the error names what the user typed.
+            default_rules = load_rules(normalize_lang(args.lang) or str(args.lang))
             if args.aggressive:
                 default_rules["_aggressive_active"] = True
-        except FileNotFoundError as e:
+        except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(2)
 
     default_extensions = [".html", ".htm", ".php", ".md", ".txt", ".hbs", ".liquid", ".latte"]
 
-    def matches_pattern(path: Path, patterns: list) -> bool:
-        """Check if path matches any of the glob patterns."""
-        import fnmatch
-        name = path.name
-        for pattern in patterns:
-            if fnmatch.fnmatch(name, pattern) or fnmatch.fnmatch(str(path), pattern):
-                return True
-        return False
-
     def should_include(path: Path) -> bool:
         """Check if file should be included based on include/exclude patterns."""
         name = path.name.lower()
-        ext = path.suffix.lower()
 
         if args.include:
-            if not matches_pattern(path, args.include):
+            if not _matches_pattern(path, args.include):
                 return False
         else:
             if not any(name.endswith(e) for e in default_extensions):
                 return False
 
         if args.exclude:
-            if matches_pattern(path, args.exclude):
+            if _matches_pattern(path, args.exclude):
                 return False
 
         return True
 
     paths = []
+    seen = set()
+    missing = 0
     for p in args.path:
         path = Path(p)
-        if path.is_dir() and args.recursive:
-            for ext in default_extensions:
-                for f in path.rglob(f"*{ext}"):
-                    if should_include(f):
-                        paths.append(f)
+        if path.is_dir():
+            if not args.recursive:
+                print(f"Warning: {path} is a directory, use --recursive to process it", file=sys.stderr)
+                continue
+            # Walk everything and let should_include() decide, so --include
+            # patterns outside the default extensions are honoured too.
+            candidates = sorted(f for f in path.rglob("*") if f.is_file())
         elif path.is_file():
-            if should_include(path):
-                paths.append(path)
+            candidates = [path]
+        else:
+            print(f"Error: {path}: no such file or directory", file=sys.stderr)
+            missing += 1
+            continue
+        for f in candidates:
+            if f not in seen and should_include(f):
+                seen.add(f)
+                paths.append(f)
+
+    # Without --in-place/--dry-run the fixed text itself goes to stdout, so
+    # status messages must stay out of it.
+    to_stdout = not args.in_place and not args.dry_run
+    status = sys.stderr if to_stdout else sys.stdout
 
     changed = 0
     errors = 0
@@ -895,6 +1065,9 @@ def main():
         # Determine which rules to use
         if args.auto_detect:
             detected_lang = auto_detect_language(path, orig if path.suffix.lower() in html_extensions else None)
+            # An explicit --lang (or config language) is the fallback.
+            if not detected_lang:
+                detected_lang = normalize_lang(args.lang)
             if not detected_lang:
                 print(f"Warning: could not detect language for {path}, skipping", file=sys.stderr)
                 errors += 1
@@ -903,8 +1076,8 @@ def main():
                 rules = load_rules(detected_lang)
                 if args.aggressive:
                     rules["_aggressive_active"] = True
-            except FileNotFoundError:
-                print(f"Warning: rules not found for detected language '{detected_lang}' for {path}", file=sys.stderr)
+            except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
+                print(f"Warning: cannot load rules for detected language '{detected_lang}' for {path}: {e}", file=sys.stderr)
                 errors += 1
                 continue
         else:
@@ -912,7 +1085,7 @@ def main():
 
         try:
             if path.suffix.lower() in html_extensions:
-                if args.preserve_format:
+                if args.preserve_format or not _can_reserialize(orig, path.suffix.lower()):
                     new = process_html_preserve_format(orig, rules)
                 else:
                     soup = BeautifulSoup(orig, "lxml")
@@ -928,25 +1101,25 @@ def main():
             continue
 
         if new == orig:
+            # Filter mode still has to emit the (unchanged) text.
+            if to_stdout:
+                sys.stdout.write(new)
             continue
 
         changed += 1
 
         if args.verbose:
-            q_before = orig.count('"')
-            q_after = new.count('"')
-            d_before = orig.count('-')
-            d_after = new.count('-') + new.count('–') + new.count('—')
-            nbsp_before = orig.count('\u00a0')
-            nbsp_after = new.count('\u00a0')
-            stats["quotes"] += max(0, q_after - q_before)
-            stats["dashes"] += max(0, d_after - d_before)
-            stats["nbsp"] += max(0, nbsp_after - nbsp_before)
+            # Straight quotes that disappeared were replaced by typographic
+            # ones; en/em dashes and NBSPs that appeared were inserted.
+            def _count(text, chars):
+                return sum(text.count(c) for c in chars)
+
+            stats["quotes"] += max(0, orig.count('"') - new.count('"'))
+            stats["dashes"] += max(0, _count(new, "–—") - _count(orig, "–—"))
+            stats["nbsp"] += max(0, _count(new, "\u00a0\u202f") - _count(orig, "\u00a0\u202f"))
 
         if args.dry_run:
             if args.diff:
-                print(f"--- {path}")
-                print(f"+++ {path} (would change)")
                 for line in difflib.unified_diff(
                     orig.splitlines(keepends=True),
                     new.splitlines(keepends=True),
@@ -968,24 +1141,28 @@ def main():
                     print(f"Warning: cannot write {path}: {e}", file=sys.stderr)
                     errors += 1
             else:
-                print(new)
+                sys.stdout.write(new)
 
     if args.dry_run:
-        print(f"\nWould fix {changed} file(s)")
+        print(f"\nWould fix {changed} file(s)", file=status)
     else:
-        print(f"\nFixed {changed} file(s)")
+        print(f"\nFixed {changed} file(s)", file=status)
 
     if errors > 0:
         print(f"\n{errors} file(s) skipped due to errors", file=sys.stderr)
 
     if args.verbose and changed > 0:
-        print("\n--- Change Statistics ---")
+        print("\n--- Change Statistics ---", file=status)
         if stats["quotes"]:
-            print(f"  Quotes fixed: {stats['quotes']}")
+            print(f"  Quotes fixed: {stats['quotes']}", file=status)
         if stats["dashes"]:
-            print(f"  Dashes converted: {stats['dashes']}")
+            print(f"  Dashes converted: {stats['dashes']}", file=status)
         if stats["nbsp"]:
-            print(f"  Non-breaking spaces added: {stats['nbsp']}")
+            print(f"  Non-breaking spaces added: {stats['nbsp']}", file=status)
+
+    # A path that does not exist is a user error, not a skipped file.
+    if missing:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

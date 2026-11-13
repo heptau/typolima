@@ -32,7 +32,7 @@ TARGET_ARCH ?= universal2
 
 .PHONY: test
 test:
-	@$(PYTHON) tests/test_typolima.py
+	@$(PYTHON) -m unittest discover -s tests
 
 .PHONY: build-pip
 build-pip: clean

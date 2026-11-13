@@ -24,7 +24,7 @@
   - `core.py`: Main typographic fixing logic.
   - `rules/`: Language-specific YAML rules.
   - `__main__.py`: CLI entry point.
-- `tests/`: Unittest-based test suite (34 tests).
+- `tests/`: Unittest-based test suite (80 tests).
 - `docs/`: Documentation website (SEO-friendly HTML).
 - `CONTRIBUTING.md`: Guidelines for contributors (code style, English comments, rules).
 - `Makefile`: Build and release automation.
@@ -40,7 +40,7 @@
 - **Aggressive mode:** Optional conversion of symbols like `(c)` to `©`, `+-` to `±`.
 
 ## Roadmap / Improvements
-- [x] Add robust testing suite (34 tests).
+- [x] Add robust testing suite (80 tests).
 - [x] Implement basic `--aggressive` mode (symbols, etc.).
 - [x] Add more languages (33+ languages supported).
 - [x] Automate builds and releases (Makefile + GoReleaser).
